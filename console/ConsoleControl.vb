@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports keys = System.Windows.Forms.Keys
 
 Public Class ConsoleControl
 
@@ -47,6 +48,16 @@ Public Class ConsoleControl
     Private Sub ConsoleControl_Load()
         Me.Text = ""
         Me.ReadOnly = True
+        Me.BackColor = System.Drawing.Color.Black
+        Me.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.Font = New System.Drawing.Font("Consolas", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.ForeColor = System.Drawing.Color.Lime
+        Me.Location = New System.Drawing.Point(0, 0)
+        Me.Name = "RichTextBox1"
+        Me.Size = New System.Drawing.Size(800, 450)
+        Me.TabIndex = 0
+        Me.Text = ""
 
         _Console = New Console(Me)
         m_device = Console.OpenInput
