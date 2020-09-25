@@ -3,21 +3,15 @@ Imports System.Threading
 
 Public Class Console : Implements IDisposable
 
-    ReadOnly device As ConsoleControl
-    ReadOnly sharedStream As New MemoryStream
-    ReadOnly reader As StreamReader
+    Friend ReadOnly device As ConsoleControl
+    Friend ReadOnly sharedStream As New PipelineStream
 
     Sub New(dev As ConsoleControl)
         device = dev
-        reader = New StreamReader(sharedStream)
     End Sub
 
-    Friend Function OpenInput() As StreamWriter
-        Return New StreamWriter(sharedStream)
-    End Function
-
     Public Function ReadLine() As String
-        Return reader.ReadLine
+        Return sharedStream.GetLine
     End Function
 
     Protected Overridable Sub Dispose(disposing As Boolean)

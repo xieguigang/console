@@ -5,7 +5,17 @@ Public Class ConsoleControl
 
     Public ReadOnly Property Console As Console
 
-    Dim m_device As StreamWriter
+    Public ReadOnly Property LastLine As String
+        Get
+            Dim cursor = Me.SelectionStart
+            Me.Select(Me.TextLength, 0)
+            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+            Me.Select(lastFirst, Me.TextLength - lastFirst)
+            Dim last As String = Me.SelectedText
+            Me.Select(cursor, 0)
+            Return last
+        End Get
+    End Property
 
     Public Sub New()
 
@@ -20,6 +30,7 @@ Public Class ConsoleControl
         e.Handled = True
 
         If e.KeyChar = vbCr Then
+            Me.Console.sharedStream.Commit(LastLine)
             Me.AppendText(e.KeyChar)
             Return
         End If
@@ -37,6 +48,8 @@ Public Class ConsoleControl
             End If
 
         Else
+            Console.sharedStream.Push(e.KeyChar)
+
             If cursor > lastFirst Then
                 insertChar(cursor, e.KeyChar)
             Else
@@ -60,7 +73,6 @@ Public Class ConsoleControl
         Me.Text = ""
 
         _Console = New Console(Me)
-        m_device = Console.OpenInput
     End Sub
 
     Private Sub insertChar(cursor As Integer, c As Char)
