@@ -11,7 +11,7 @@ Public Class Form1
 
     Private Sub ReadLineToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ReadLineToolStripMenuItem.Click
         Call New Thread(Sub()
-                            MsgBox(console.ReadLine)
+                            console.WriteLine("Your input is: " & console.ReadLine)
                         End Sub).Start()
     End Sub
 
@@ -19,6 +19,11 @@ Public Class Form1
         console = ConsoleControl1.Console
         console.ForegroundColor = ConsoleColor.Yellow
         console.BackgroundColor = ConsoleColor.DarkBlue
+
+        console.Write("Microsoft Windows [Version 10.0.19041.508]
+(c) 2020 Microsoft Corporation. All rights reserved.
+
+# ")
     End Sub
 
     Private Sub ReadCharToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ReadCharToolStripMenuItem.Click
