@@ -22,18 +22,35 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Me.components = New System.ComponentModel.Container()
         Me.ConsoleControl1 = New Microsoft.VisualBasic.Windows.Forms.ConsoleControl()
+        Me.ContextMenuStrip1 = New System.Windows.Forms.ContextMenuStrip(Me.components)
+        Me.ReadLineToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.ContextMenuStrip1.SuspendLayout()
         Me.SuspendLayout()
         '
         'ConsoleControl1
         '
         Me.ConsoleControl1.BackColor = System.Drawing.Color.Black
+        Me.ConsoleControl1.ContextMenuStrip = Me.ContextMenuStrip1
         Me.ConsoleControl1.Dock = System.Windows.Forms.DockStyle.Fill
         Me.ConsoleControl1.ForeColor = System.Drawing.Color.White
         Me.ConsoleControl1.Location = New System.Drawing.Point(0, 0)
         Me.ConsoleControl1.Name = "ConsoleControl1"
         Me.ConsoleControl1.Size = New System.Drawing.Size(1061, 601)
         Me.ConsoleControl1.TabIndex = 0
+        '
+        'ContextMenuStrip1
+        '
+        Me.ContextMenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ReadLineToolStripMenuItem})
+        Me.ContextMenuStrip1.Name = "ContextMenuStrip1"
+        Me.ContextMenuStrip1.Size = New System.Drawing.Size(181, 48)
+        '
+        'ReadLineToolStripMenuItem
+        '
+        Me.ReadLineToolStripMenuItem.Name = "ReadLineToolStripMenuItem"
+        Me.ReadLineToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.ReadLineToolStripMenuItem.Text = "ReadLine"
         '
         'Form1
         '
@@ -43,9 +60,12 @@ Partial Class Form1
         Me.Controls.Add(Me.ConsoleControl1)
         Me.Name = "Form1"
         Me.Text = "Form1"
+        Me.ContextMenuStrip1.ResumeLayout(False)
         Me.ResumeLayout(False)
 
     End Sub
 
     Friend WithEvents ConsoleControl1 As Microsoft.VisualBasic.Windows.Forms.ConsoleControl
+    Friend WithEvents ContextMenuStrip1 As ContextMenuStrip
+    Friend WithEvents ReadLineToolStripMenuItem As ToolStripMenuItem
 End Class

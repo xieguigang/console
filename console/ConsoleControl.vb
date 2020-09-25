@@ -1,17 +1,31 @@
-﻿Public Class ConsoleControl
+﻿Imports System.IO
+
+Public Class ConsoleControl
 
     Public ReadOnly Property Console As Console
 
-    Private Sub RichTextBox1_KeyPress(sender As Object, e As KeyPressEventArgs) Handles RichTextBox1.KeyPress
+    Dim m_device As StreamWriter
+
+    Public Sub New()
+
+        ' This call is required by the designer.
+        InitializeComponent()
+
+        ' Add any initialization after the InitializeComponent() call.
+        Call ConsoleControl_Load()
+    End Sub
+
+    Private Sub RichTextBox1_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
         e.Handled = True
 
         If e.KeyChar = vbCr Then
-
+            Me.AppendText(e.KeyChar)
+            Return
         End If
 
-        Dim cursor = RichTextBox1.SelectionStart
-        RichTextBox1.Select(RichTextBox1.TextLength, 0)
-        Dim lastFirst = RichTextBox1.GetFirstCharIndexOfCurrentLine
+        Dim cursor = Me.SelectionStart
+        Me.Select(Me.TextLength, 0)
+        Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
 
         If e.KeyChar = vbBack Then
             If cursor > lastFirst Then
@@ -25,48 +39,49 @@
             If cursor > lastFirst Then
                 insertChar(cursor, e.KeyChar)
             Else
-                RichTextBox1.AppendText(e.KeyChar)
+                Me.AppendText(e.KeyChar)
             End If
         End If
     End Sub
 
-    Private Sub ConsoleControl_Load(sender As Object, e As EventArgs) Handles Me.Load
-        RichTextBox1.Text = ""
-        RichTextBox1.ReadOnly = True
+    Private Sub ConsoleControl_Load()
+        Me.Text = ""
+        Me.ReadOnly = True
 
-        _Console = New Console(RichTextBox1)
+        _Console = New Console(Me)
+        m_device = Console.OpenInput
     End Sub
 
     Private Sub insertChar(cursor As Integer, c As Char)
-        RichTextBox1.ReadOnly = False
-        RichTextBox1.Select(cursor, 0)
-        RichTextBox1.SelectedText = c
-        RichTextBox1.ReadOnly = True
+        Me.ReadOnly = False
+        Me.Select(cursor, 0)
+        Me.SelectedText = c
+        Me.ReadOnly = True
     End Sub
 
     Private Sub deleteChar(cursor As Integer)
-        RichTextBox1.ReadOnly = False
-        RichTextBox1.Select(cursor, 1)
-        RichTextBox1.SelectedText = ""
-        RichTextBox1.ReadOnly = True
+        Me.ReadOnly = False
+        Me.Select(cursor, 1)
+        Me.SelectedText = ""
+        Me.ReadOnly = True
     End Sub
 
-    Private Sub RichTextBox1_KeyUp(sender As Object, e As KeyEventArgs) Handles RichTextBox1.KeyUp
-        Dim cursor = RichTextBox1.SelectionStart
+    Private Sub RichTextBox1_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        Dim cursor = Me.SelectionStart
 
         e.Handled = True
 
         If e.KeyCode = Keys.Left Then
             If cursor > 0 Then
-                RichTextBox1.Select(cursor - 1, 0)
+                Me.Select(cursor - 1, 0)
             End If
         ElseIf e.KeyCode = Keys.Right Then
-            If cursor < RichTextBox1.TextLength Then
-                RichTextBox1.Select(cursor + 1, 0)
+            If cursor < Me.TextLength Then
+                Me.Select(cursor + 1, 0)
             End If
         ElseIf e.KeyCode = Keys.Delete Then
-            RichTextBox1.Select(RichTextBox1.TextLength, 0)
-            Dim lastFirst = RichTextBox1.GetFirstCharIndexOfCurrentLine
+            Me.Select(Me.TextLength, 0)
+            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
 
             If cursor > lastFirst Then
                 deleteChar(cursor)
@@ -77,7 +92,7 @@
         End If
     End Sub
 
-    Private Sub RichTextBox1_KeyDown(sender As Object, e As KeyEventArgs) Handles RichTextBox1.KeyDown
+    Private Sub RichTextBox1_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
         e.Handled = True
     End Sub
 End Class
