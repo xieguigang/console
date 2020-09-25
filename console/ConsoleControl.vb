@@ -9,23 +9,24 @@
 
         End If
 
-        If e.KeyChar = vbBack Then
-            Dim cursor = RichTextBox1.SelectionStart
-            RichTextBox1.Select(RichTextBox1.TextLength, 0)
-            Dim lastFirst = RichTextBox1.GetFirstCharIndexOfCurrentLine
+        Dim cursor = RichTextBox1.SelectionStart
+        RichTextBox1.Select(RichTextBox1.TextLength, 0)
+        Dim lastFirst = RichTextBox1.GetFirstCharIndexOfCurrentLine
 
+        If e.KeyChar = vbBack Then
             If cursor > lastFirst Then
-                RichTextBox1.ReadOnly = False
-                RichTextBox1.Select(cursor - 1, 1)
-                RichTextBox1.SelectedText = ""
-                RichTextBox1.ReadOnly = True
+                deleteChar(cursor - 1)
             Else
                 ' can not delete
                 e.Handled = False
             End If
 
         Else
-            RichTextBox1.AppendText(e.KeyChar)
+            If cursor > lastFirst Then
+                insertChar(cursor, e.KeyChar)
+            Else
+                RichTextBox1.AppendText(e.KeyChar)
+            End If
         End If
     End Sub
 
@@ -34,6 +35,20 @@
         RichTextBox1.ReadOnly = True
 
         _Console = New Console(RichTextBox1)
+    End Sub
+
+    Private Sub insertChar(cursor As Integer, c As Char)
+        RichTextBox1.ReadOnly = False
+        RichTextBox1.Select(cursor, 0)
+        RichTextBox1.SelectedText = c
+        RichTextBox1.ReadOnly = True
+    End Sub
+
+    Private Sub deleteChar(cursor As Integer)
+        RichTextBox1.ReadOnly = False
+        RichTextBox1.Select(cursor, 1)
+        RichTextBox1.SelectedText = ""
+        RichTextBox1.ReadOnly = True
     End Sub
 
     Private Sub RichTextBox1_KeyUp(sender As Object, e As KeyEventArgs) Handles RichTextBox1.KeyUp
@@ -54,10 +69,7 @@
             Dim lastFirst = RichTextBox1.GetFirstCharIndexOfCurrentLine
 
             If cursor > lastFirst Then
-                RichTextBox1.ReadOnly = False
-                RichTextBox1.Select(cursor, 1)
-                RichTextBox1.SelectedText = ""
-                RichTextBox1.ReadOnly = True
+                deleteChar(cursor)
             Else
                 ' can not delete
                 e.Handled = False
