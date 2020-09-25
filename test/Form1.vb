@@ -17,8 +17,8 @@ Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
         console = ConsoleControl1.Console
-        console.ForegroundColor = ConsoleColor.Yellow
-        console.BackgroundColor = ConsoleColor.DarkBlue
+        console.ForegroundColor = ConsoleColor.White
+        console.SetConsoleBackColor(Color.DodgerBlue)
 
         console.Write("Microsoft Windows [Version 10.0.19041.508]
 (c) 2020 Microsoft Corporation. All rights reserved.
@@ -30,11 +30,5 @@ Public Class Form1
         Call New Thread(Sub()
                             MsgBox(console.ReadKey)
                         End Sub).Start()
-    End Sub
-
-    Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        If Not console Is Nothing Then
-            console.Write("Z"c)
-        End If
     End Sub
 End Class

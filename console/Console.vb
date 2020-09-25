@@ -1,6 +1,4 @@
-﻿Imports System.IO
-Imports System.Threading
-Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
+﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
 
 Public Class Console : Implements IDisposable
 
@@ -33,6 +31,14 @@ Public Class Console : Implements IDisposable
 
     Sub New(dev As ConsoleControl)
         device = dev
+    End Sub
+
+    Public Sub SetConsoleForeColor(color As Color)
+        device.ForeColor = color
+    End Sub
+
+    Public Sub SetConsoleBackColor(color As Color)
+        device.BackColor = color
     End Sub
 
     Public Function ReadLine() As String
