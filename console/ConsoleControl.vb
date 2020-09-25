@@ -1,5 +1,7 @@
 ﻿Public Class ConsoleControl
 
+    Dim console As Console
+
     Private Sub RichTextBox1_TextChanged(sender As Object, e As EventArgs) Handles RichTextBox1.TextChanged
 
     End Sub
@@ -33,6 +35,8 @@
     Private Sub ConsoleControl_Load(sender As Object, e As EventArgs) Handles Me.Load
         RichTextBox1.Text = ""
         RichTextBox1.ReadOnly = True
+
+        console = New Console(RichTextBox1)
     End Sub
 
     Private Sub RichTextBox1_KeyUp(sender As Object, e As KeyEventArgs) Handles RichTextBox1.KeyUp
