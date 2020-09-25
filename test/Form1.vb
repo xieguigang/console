@@ -17,6 +17,8 @@ Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
         console = ConsoleControl1.Console
+        console.ForegroundColor = ConsoleColor.Yellow
+        console.BackgroundColor = ConsoleColor.DarkBlue
     End Sub
 
     Private Sub ReadCharToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ReadCharToolStripMenuItem.Click

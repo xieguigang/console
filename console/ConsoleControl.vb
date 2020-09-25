@@ -82,11 +82,15 @@ Public Class ConsoleControl
         Me.ReadOnly = True
     End Sub
 
-    Friend Sub writeChar(c As Char)
+    Friend Sub write(c As String)
+        If c.StringEmpty(False) Then
+            Return
+        End If
+
         Dim cursor = Me.SelectionStart
 
         Me.ReadOnly = False
-        Me.Select(cursor, 1)
+        Me.Select(cursor, c.Length)
         Me.SelectedText = c
         Me.ReadOnly = True
     End Sub

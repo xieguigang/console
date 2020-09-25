@@ -70,6 +70,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal.vb" />
     <Compile Include="PipelineStream.vb" />
     <Compile Include="Console.vb" />
     <Compile Include="My Project\Application.Designer.vb">

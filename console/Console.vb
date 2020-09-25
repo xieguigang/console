@@ -1,10 +1,35 @@
 ﻿Imports System.IO
 Imports System.Threading
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
 
 Public Class Console : Implements IDisposable
 
     Friend ReadOnly device As ConsoleControl
     Friend ReadOnly sharedStream As New PipelineStream
+
+    Public Property BackgroundColor As ConsoleColor
+        Get
+            Dim cl As Color = device.BackColor
+            Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
+
+            Return enumCl
+        End Get
+        Set(value As ConsoleColor)
+            device.BackColor = Internal.FromConsoleColor(value.ToString)
+        End Set
+    End Property
+
+    Public Property ForegroundColor As ConsoleColor
+        Get
+            Dim cl As Color = device.ForeColor
+            Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
+
+            Return enumCl
+        End Get
+        Set(value As ConsoleColor)
+            device.ForeColor = Internal.FromConsoleColor(value.ToString)
+        End Set
+    End Property
 
     Sub New(dev As ConsoleControl)
         device = dev
@@ -18,8 +43,12 @@ Public Class Console : Implements IDisposable
         Return sharedStream.GetChar
     End Function
 
-    Public Sub Write(c As Char)
-        Call device.Invoke(Sub() device.writeChar(c))
+    Public Sub Write(str As String)
+        Call device.Invoke(Sub() device.write(str))
+    End Sub
+
+    Public Sub WriteLine(str As String)
+        Call device.Invoke(Sub() device.write(str & vbCr))
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
