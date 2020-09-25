@@ -26,31 +26,42 @@ Partial Class Form1
         Me.ConsoleControl1 = New Microsoft.VisualBasic.Windows.Forms.ConsoleControl()
         Me.ContextMenuStrip1 = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.ReadLineToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.ReadCharToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.ContextMenuStrip1.SuspendLayout()
         Me.SuspendLayout()
         '
         'ConsoleControl1
         '
         Me.ConsoleControl1.BackColor = System.Drawing.Color.Black
+        Me.ConsoleControl1.BorderStyle = System.Windows.Forms.BorderStyle.None
         Me.ConsoleControl1.ContextMenuStrip = Me.ContextMenuStrip1
         Me.ConsoleControl1.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.ConsoleControl1.Font = New System.Drawing.Font("Consolas", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.ConsoleControl1.ForeColor = System.Drawing.Color.White
         Me.ConsoleControl1.Location = New System.Drawing.Point(0, 0)
         Me.ConsoleControl1.Name = "ConsoleControl1"
+        Me.ConsoleControl1.ReadOnly = True
         Me.ConsoleControl1.Size = New System.Drawing.Size(1061, 601)
         Me.ConsoleControl1.TabIndex = 0
+        Me.ConsoleControl1.Text = ""
         '
         'ContextMenuStrip1
         '
-        Me.ContextMenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ReadLineToolStripMenuItem})
+        Me.ContextMenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ReadLineToolStripMenuItem, Me.ReadCharToolStripMenuItem})
         Me.ContextMenuStrip1.Name = "ContextMenuStrip1"
-        Me.ContextMenuStrip1.Size = New System.Drawing.Size(181, 48)
+        Me.ContextMenuStrip1.Size = New System.Drawing.Size(181, 70)
         '
         'ReadLineToolStripMenuItem
         '
         Me.ReadLineToolStripMenuItem.Name = "ReadLineToolStripMenuItem"
         Me.ReadLineToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
         Me.ReadLineToolStripMenuItem.Text = "ReadLine"
+        '
+        'ReadCharToolStripMenuItem
+        '
+        Me.ReadCharToolStripMenuItem.Name = "ReadCharToolStripMenuItem"
+        Me.ReadCharToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.ReadCharToolStripMenuItem.Text = "ReadChar"
         '
         'Form1
         '
@@ -68,4 +79,5 @@ Partial Class Form1
     Friend WithEvents ConsoleControl1 As Microsoft.VisualBasic.Windows.Forms.ConsoleControl
     Friend WithEvents ContextMenuStrip1 As ContextMenuStrip
     Friend WithEvents ReadLineToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents ReadCharToolStripMenuItem As ToolStripMenuItem
 End Class

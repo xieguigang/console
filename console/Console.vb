@@ -14,6 +14,14 @@ Public Class Console : Implements IDisposable
         Return sharedStream.GetLine
     End Function
 
+    Public Function ReadKey() As Char
+        Return sharedStream.GetChar
+    End Function
+
+    Public Sub Write(c As Char)
+        Call device.Invoke(Sub() device.writeChar(c))
+    End Sub
+
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             If disposing Then

@@ -82,6 +82,15 @@ Public Class ConsoleControl
         Me.ReadOnly = True
     End Sub
 
+    Friend Sub writeChar(c As Char)
+        Dim cursor = Me.SelectionStart
+
+        Me.ReadOnly = False
+        Me.Select(cursor, 1)
+        Me.SelectedText = c
+        Me.ReadOnly = True
+    End Sub
+
     Private Sub deleteChar(cursor As Integer)
         Me.ReadOnly = False
         Me.Select(cursor, 1)
@@ -94,15 +103,15 @@ Public Class ConsoleControl
 
         e.Handled = True
 
-        If e.KeyCode = Keys.Left Then
+        If e.KeyCode = keys.Left Then
             If cursor > 0 Then
                 Me.Select(cursor - 1, 0)
             End If
-        ElseIf e.KeyCode = Keys.Right Then
+        ElseIf e.KeyCode = keys.Right Then
             If cursor < Me.TextLength Then
                 Me.Select(cursor + 1, 0)
             End If
-        ElseIf e.KeyCode = Keys.Delete Then
+        ElseIf e.KeyCode = keys.Delete Then
             Me.Select(Me.TextLength, 0)
             Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
 
