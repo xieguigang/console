@@ -73,7 +73,7 @@ Public Class ConsoleControl
 
         Dim cursor = Me.SelectionStart
         Me.Select(Me.TextLength, 0)
-        Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+        Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine + getPs1StringLength()
 
         If e.KeyChar = vbBack Then
             If cursor > lastFirst Then
@@ -162,7 +162,7 @@ Public Class ConsoleControl
             End If
         ElseIf e.KeyCode = keys.Delete Then
             Me.Select(Me.TextLength, 0)
-            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine + getPs1StringLength()
 
             If cursor > lastFirst Then
                 deleteChar(cursor)
