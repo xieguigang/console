@@ -57,6 +57,19 @@ Public Class Console : Implements IDisposable
         Call device.Invoke(Sub() device.write(str & vbCr))
     End Sub
 
+    Public Sub WriteLine(img As Image)
+        Dim bitmap As Bitmap = img
+        Dim backup = Clipboard.GetDataObject
+
+        Call WriteLine("")
+
+        Clipboard.SetDataObject(bitmap)
+        device.Invoke(Sub() device.Paste(DataFormats.GetFormat(DataFormats.Bitmap)))
+        Clipboard.SetDataObject(backup)
+
+        Call WriteLine("")
+    End Sub
+
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             If disposing Then
