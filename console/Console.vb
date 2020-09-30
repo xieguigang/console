@@ -6,7 +6,7 @@ Public Class Console : Implements IDisposable, IConsole
     Friend ReadOnly device As ConsoleControl
     Friend ReadOnly sharedStream As New PipelineStream
 
-    Public Property BackgroundColor As ConsoleColor
+    Public Property BackgroundColor As ConsoleColor Implements IConsole.BackgroundColor
         Get
             Dim cl As Color = device.background
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
@@ -18,7 +18,7 @@ Public Class Console : Implements IDisposable, IConsole
         End Set
     End Property
 
-    Public Property ForegroundColor As ConsoleColor
+    Public Property ForegroundColor As ConsoleColor Implements IConsole.ForegroundColor
         Get
             Dim cl As Color = device.foreground
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
@@ -28,6 +28,17 @@ Public Class Console : Implements IDisposable, IConsole
         Set(value As ConsoleColor)
             device.foreground = Internal.FromConsoleColor(value.ToString)
         End Set
+    End Property
+
+    Public ReadOnly Property WindowWidth As Integer Implements IConsole.WindowWidth
+        Get
+            Using g = Graphics.FromHwnd(device.Handle)
+                Dim size As SizeF = g.MeasureString("*", device.Font)
+                Dim count As Integer = device.Size.Width / size.Width
+
+                Return count
+            End Using
+        End Get
     End Property
 
     Public Event CancelKeyPress()
