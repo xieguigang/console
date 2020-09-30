@@ -1,36 +1,54 @@
-﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
+﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal.STDIO__
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
 
-Public Class Console : Implements IDisposable
+Public Class Console : Implements IDisposable, IConsole
 
     Friend ReadOnly device As ConsoleControl
     Friend ReadOnly sharedStream As New PipelineStream
 
-    Public Property BackgroundColor As ConsoleColor
+    Public Property BackgroundColor As ConsoleColor Implements IConsole.BackgroundColor
         Get
-            Dim cl As Color = device.BackColor
+            Dim cl As Color = device.background
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
 
             Return enumCl
         End Get
         Set(value As ConsoleColor)
-            device.BackColor = Internal.FromConsoleColor(value.ToString)
+            device.background = Internal.FromConsoleColor(value.ToString)
         End Set
     End Property
 
-    Public Property ForegroundColor As ConsoleColor
+    Public Property ForegroundColor As ConsoleColor Implements IConsole.ForegroundColor
         Get
-            Dim cl As Color = device.ForeColor
+            Dim cl As Color = device.foreground
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
 
             Return enumCl
         End Get
         Set(value As ConsoleColor)
-            device.ForeColor = Internal.FromConsoleColor(value.ToString)
+            device.foreground = Internal.FromConsoleColor(value.ToString)
         End Set
     End Property
+
+    Public ReadOnly Property WindowWidth As Integer Implements IConsole.WindowWidth
+        Get
+            Using g = Graphics.FromHwnd(device.Handle)
+                Dim size As SizeF = g.MeasureString("*", device.Font)
+                Dim count As Integer = device.Size.Width / size.Width
+
+                Return count
+            End Using
+        End Get
+    End Property
+
+    Public Event CancelKeyPress()
 
     Sub New(dev As ConsoleControl)
         device = dev
+    End Sub
+
+    Friend Sub TriggerCancelKeyPress()
+        RaiseEvent CancelKeyPress()
     End Sub
 
     Public Sub SetConsoleForeColor(color As Color)
@@ -41,19 +59,45 @@ Public Class Console : Implements IDisposable
         device.BackColor = color
     End Sub
 
-    Public Function ReadLine() As String
+    Public Sub Clear() Implements IConsole.Clear
+        device.Clear()
+    End Sub
+
+    Public Sub WriteLine() Implements IConsole.WriteLine
+        Call Write(vbCr)
+    End Sub
+
+    Public Sub WriteLine(s As String, ParamArray args() As Object) Implements IConsole.WriteLine
+        Call Write(String.Format(s, args) & vbCr)
+    End Sub
+
+    Public Function Read() As Integer Implements IConsole.Read
+        SyncLock sharedStream
+            If Not sharedStream.HaveChar Then
+                Return -1
+            Else
+                Return AscW(sharedStream.GetChar)
+            End If
+        End SyncLock
+    End Function
+
+    Public Function ReadLine() As String Implements IConsole.ReadLine
         Return sharedStream.GetLine
     End Function
 
-    Public Function ReadKey() As Char
-        Return sharedStream.GetChar
+    Public Function ReadKey() As ConsoleKeyInfo Implements IConsole.ReadKey
+        Dim keyChar As Char = sharedStream.GetChar
+        Dim key As ConsoleKey
+        Dim info As New ConsoleKeyInfo(keyChar, key, shift:=False, alt:=False, control:=False)
+
+        Return info
     End Function
 
-    Public Sub Write(str As String)
+    Public Sub Write(str As String) Implements IConsole.Write
         Call device.Invoke(Sub() device.write(str))
     End Sub
 
-    Public Sub WriteLine(str As String)
+    Public Sub WriteLine(str As String) Implements IConsole.WriteLine
         Call device.Invoke(Sub() device.write(str & vbCr))
     End Sub
 
