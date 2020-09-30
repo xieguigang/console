@@ -1,6 +1,4 @@
 ﻿Imports System.Threading
-Imports Microsoft.VisualBasic.Language
-Imports Microsoft.VisualBasic.Text
 
 Public Class PipelineStream
 
@@ -18,6 +16,10 @@ Public Class PipelineStream
             m_commit.Enqueue(line)
         End SyncLock
     End Sub
+
+    Public Function HaveChar() As Boolean
+        Return m_buffer.Count > 0
+    End Function
 
     Public Function GetChar() As Char
 RE0:    Do While m_buffer.Count = 0
