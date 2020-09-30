@@ -2,7 +2,7 @@
 
 Public Class Form1
 
-    Dim console As Microsoft.VisualBasic.Windows.Forms.Console
+    Dim WithEvents console As Microsoft.VisualBasic.Windows.Forms.Console
 
 
     Private Sub ConsoleControl1_DoubleClick(sender As Object, e As EventArgs) Handles ConsoleControl1.DoubleClick
@@ -30,5 +30,13 @@ Public Class Form1
         Call New Thread(Sub()
                             MsgBox(console.ReadKey)
                         End Sub).Start()
+    End Sub
+
+    Private Sub console_CancelKeyPress() Handles console.CancelKeyPress
+        Dim tmp = console.ForegroundColor
+
+        console.ForegroundColor = ConsoleColor.Magenta
+        console.WriteLine("task has been cancel...")
+        console.ForegroundColor = tmp
     End Sub
 End Class

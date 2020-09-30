@@ -29,8 +29,14 @@ Public Class Console : Implements IDisposable
         End Set
     End Property
 
+    Public Event CancelKeyPress()
+
     Sub New(dev As ConsoleControl)
         device = dev
+    End Sub
+
+    Friend Sub TriggerCancelKeyPress()
+        RaiseEvent CancelKeyPress()
     End Sub
 
     Public Sub SetConsoleForeColor(color As Color)

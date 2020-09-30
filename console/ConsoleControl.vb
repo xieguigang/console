@@ -1,4 +1,5 @@
-﻿Imports keys = System.Windows.Forms.Keys
+﻿Imports Microsoft.VisualBasic.Text
+Imports keys = System.Windows.Forms.Keys
 
 Public Class ConsoleControl
 
@@ -34,6 +35,9 @@ Public Class ConsoleControl
         If e.KeyChar = vbCr Then
             Me.Console.sharedStream.Commit(LastLine)
             Me.AppendText(vbLf)
+            Return
+        ElseIf e.KeyChar = ASCII.ETX Then
+            Call Console.TriggerCancelKeyPress()
             Return
         End If
 
@@ -101,6 +105,8 @@ Public Class ConsoleControl
         Me.ReadOnly = False
         Me.Select(cursor, c.Length)
         Me.SelectedText = c
+        Me.SelectionBackColor = background
+        Me.SelectionColor = foreground
         Me.ReadOnly = True
     End Sub
 
@@ -139,5 +145,9 @@ Public Class ConsoleControl
 
     Private Sub RichTextBox1_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
         e.Handled = True
+    End Sub
+
+    Private Sub ConsoleControl_SelectionChanged(sender As Object, e As EventArgs) Handles Me.SelectionChanged
+
     End Sub
 End Class
