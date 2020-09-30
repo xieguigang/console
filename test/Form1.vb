@@ -1,5 +1,6 @@
 ﻿Imports System.Threading
 Imports Microsoft.VisualBasic.ApplicationServices.Terminal
+Imports Microsoft.VisualBasic.Imaging
 Imports Microsoft.VisualBasic.Language.UnixBash
 
 Public Class Form1
@@ -18,6 +19,8 @@ Public Class Form1
 (c) 2020 Microsoft Corporation. All rights reserved.
 
 ")
+
+        console.WriteLine("E:\console\docs\screenshot.PNG".LoadImage)
 
         shell = New Shell(PS1.Fedora12, Sub(code)
                                             Call console.WriteLine($"running [{code}] job done!")
