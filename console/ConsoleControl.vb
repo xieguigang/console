@@ -1,9 +1,11 @@
-﻿Imports System.IO
-Imports keys = System.Windows.Forms.Keys
+﻿Imports keys = System.Windows.Forms.Keys
 
 Public Class ConsoleControl
 
     Public ReadOnly Property Console As Console
+
+    Friend background As Color = Color.Black
+    Friend foreground As Color = Color.White
 
     Public ReadOnly Property LastLine As String
         Get
@@ -31,7 +33,7 @@ Public Class ConsoleControl
 
         If e.KeyChar = vbCr Then
             Me.Console.sharedStream.Commit(LastLine)
-            Me.AppendText(e.KeyChar)
+            Me.AppendText(vbLf)
             Return
         End If
 
@@ -54,6 +56,9 @@ Public Class ConsoleControl
                 insertChar(cursor, e.KeyChar)
             Else
                 Me.AppendText(e.KeyChar)
+                Me.Select(Me.TextLength, 1)
+                Me.SelectionBackColor = background
+                Me.SelectionColor = foreground
             End If
         End If
     End Sub
@@ -79,6 +84,10 @@ Public Class ConsoleControl
         Me.ReadOnly = False
         Me.Select(cursor, 0)
         Me.SelectedText = c
+        Me.Select(cursor, 1)
+        Me.SelectionBackColor = background
+        Me.SelectionColor = foreground
+        Me.Select(cursor + 1, 0)
         Me.ReadOnly = True
     End Sub
 

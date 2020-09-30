@@ -103,7 +103,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="ConsoleControl.vb">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="ConsoleControl.Designer.vb">
       <DependentUpon>ConsoleControl.vb</DependentUpon>

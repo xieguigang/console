@@ -7,25 +7,25 @@ Public Class Console : Implements IDisposable
 
     Public Property BackgroundColor As ConsoleColor
         Get
-            Dim cl As Color = device.BackColor
+            Dim cl As Color = device.background
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
 
             Return enumCl
         End Get
         Set(value As ConsoleColor)
-            device.BackColor = Internal.FromConsoleColor(value.ToString)
+            device.background = Internal.FromConsoleColor(value.ToString)
         End Set
     End Property
 
     Public Property ForegroundColor As ConsoleColor
         Get
-            Dim cl As Color = device.ForeColor
+            Dim cl As Color = device.foreground
             Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
 
             Return enumCl
         End Get
         Set(value As ConsoleColor)
-            device.ForeColor = Internal.FromConsoleColor(value.ToString)
+            device.foreground = Internal.FromConsoleColor(value.ToString)
         End Set
     End Property
 
