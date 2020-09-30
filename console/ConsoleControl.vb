@@ -1,4 +1,5 @@
-﻿Imports Microsoft.VisualBasic.Text
+﻿Imports System.Text.RegularExpressions
+Imports Microsoft.VisualBasic.Text
 Imports keys = System.Windows.Forms.Keys
 
 Public Class ConsoleControl
@@ -7,17 +8,25 @@ Public Class ConsoleControl
 
     Friend background As Color = Color.Black
     Friend foreground As Color = Color.White
+    Friend ps1 As Regex
 
     Public ReadOnly Property LastLine As String
         Get
-            Dim cursor = Me.SelectionStart
-            Me.Select(Me.TextLength, 0)
-            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
-            Me.Select(lastFirst, Me.TextLength - lastFirst)
-            Dim last As String = Me.SelectedText
-            Me.Select(cursor, 0)
-            Return last
+            Return getLastLineRaw(offset:=getPs1StringLength)
         End Get
+    End Property
+
+    Public Property Ps1Pattern As String
+        Get
+            If ps1 Is Nothing Then
+                Return ""
+            Else
+                Return ps1.ToString
+            End If
+        End Get
+        Set(value As String)
+            ps1 = New Regex(value)
+        End Set
     End Property
 
     Public Sub New()
@@ -29,8 +38,25 @@ Public Class ConsoleControl
         Call ConsoleControl_Load()
     End Sub
 
-    Private Function getPs1StringLength() As Integer
+    Private Function getLastLineRaw(offset As Integer) As String
+        Dim cursor = Me.SelectionStart
+        Me.Select(Me.TextLength, 0)
+        Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+        Me.Select(lastFirst + offset, Me.TextLength - lastFirst - offset)
+        Dim last As String = Me.SelectedText
+        Me.Select(cursor, 0)
+        Return last
+    End Function
 
+    Private Function getPs1StringLength() As Integer
+        If Ps1Pattern.StringEmpty(False) Then
+            Return 0
+        Else
+            Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+            Dim ps1String = ps1.Match(getLastLineRaw(0))
+
+            Return ps1String.Length
+        End If
     End Function
 
     Private Sub RichTextBox1_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
@@ -80,7 +106,7 @@ Public Class ConsoleControl
         Me.Font = New System.Drawing.Font("Consolas", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.ForeColor = System.Drawing.Color.Lime
         Me.Location = New System.Drawing.Point(0, 0)
-        Me.Name = "RichTextBox1"
+        Me.Name = "Console1"
         Me.Size = New System.Drawing.Size(800, 450)
         Me.TabIndex = 0
         Me.Text = ""

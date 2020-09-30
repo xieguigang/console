@@ -12,6 +12,8 @@ Public Class Form1
         console.ForegroundColor = ConsoleColor.White
         console.SetConsoleBackColor(Color.DodgerBlue)
 
+        ConsoleControl1.Ps1Pattern = "\[.+\][$]\s"
+
         console.Write("Microsoft Windows [Version 10.0.19041.508]
 (c) 2020 Microsoft Corporation. All rights reserved.
 
