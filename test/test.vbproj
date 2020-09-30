@@ -143,6 +143,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GCModeller\src\runtime\sciBASIC#\Microsoft.VisualBasic.Core\47-dotnet_Microsoft.VisualBasic.vbproj">
+      <Project>{FECCE1FD-E1D4-49E3-A668-60BB5E7AED99}</Project>
+      <Name>47-dotnet_Microsoft.VisualBasic</Name>
+    </ProjectReference>
     <ProjectReference Include="..\console\console.vbproj">
       <Project>{b17ef2af-f2de-4036-9e2a-5fa10f8116c7}</Project>
       <Name>console</Name>

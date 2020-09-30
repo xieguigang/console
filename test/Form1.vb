@@ -1,19 +1,11 @@
 ﻿Imports System.Threading
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal
+Imports Microsoft.VisualBasic.Language.UnixBash
 
 Public Class Form1
 
     Dim WithEvents console As Microsoft.VisualBasic.Windows.Forms.Console
-
-
-    Private Sub ConsoleControl1_DoubleClick(sender As Object, e As EventArgs) Handles ConsoleControl1.DoubleClick
-
-    End Sub
-
-    Private Sub ReadLineToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ReadLineToolStripMenuItem.Click
-        Call New Thread(Sub()
-                            console.WriteLine("Your input is: " & console.ReadLine)
-                        End Sub).Start()
-    End Sub
+    Dim shell As Shell
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
         console = ConsoleControl1.Console
@@ -24,12 +16,11 @@ Public Class Form1
 (c) 2020 Microsoft Corporation. All rights reserved.
 
 # ")
-    End Sub
 
-    Private Sub ReadCharToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles ReadCharToolStripMenuItem.Click
-        Call New Thread(Sub()
-                            MsgBox(console.ReadKey)
-                        End Sub).Start()
+        shell = New Shell(PS1.Fedora12, Sub(code)
+                                            Call console.WriteLine($"running [{code}] job done!")
+                                        End Sub, console)
+        Call New Thread(AddressOf shell.Run).Start()
     End Sub
 
     Private Sub console_CancelKeyPress() Handles console.CancelKeyPress
