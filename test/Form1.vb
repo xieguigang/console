@@ -15,7 +15,7 @@ Public Class Form1
         console.Write("Microsoft Windows [Version 10.0.19041.508]
 (c) 2020 Microsoft Corporation. All rights reserved.
 
-# ")
+")
 
         shell = New Shell(PS1.Fedora12, Sub(code)
                                             Call console.WriteLine($"running [{code}] job done!")

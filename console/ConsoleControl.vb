@@ -29,6 +29,10 @@ Public Class ConsoleControl
         Call ConsoleControl_Load()
     End Sub
 
+    Private Function getPs1StringLength() As Integer
+
+    End Function
+
     Private Sub RichTextBox1_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
         e.Handled = True
 
