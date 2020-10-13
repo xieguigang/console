@@ -1,4 +1,5 @@
 ﻿Imports System.Threading
+Imports Microsoft.VisualBasic.Text
 
 Public Class PipelineStream
 
@@ -14,6 +15,8 @@ Public Class PipelineStream
     Public Sub Commit(line As String)
         SyncLock m_commit
             m_commit.Enqueue(line)
+            m_buffer.Clear()
+            m_buffer.Enqueue(ASCII.CR)
         End SyncLock
     End Sub
 
