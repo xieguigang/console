@@ -45,6 +45,8 @@ RE0:    Do While m_commit.Count = 0
         SyncLock m_commit
             If m_commit.Count = 0 Then
                 GoTo RE0
+            Else
+                m_buffer.Clear()
             End If
 
             Return m_commit.Dequeue

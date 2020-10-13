@@ -64,6 +64,7 @@ Public Class ConsoleControl
 
         If e.KeyChar = vbCr Then
             Me.Console.sharedStream.Commit(LastLine)
+            Me.Console.sharedStream.Push(ASCII.CR)
             Me.AppendText(vbLf)
             Return
         ElseIf e.KeyChar = ASCII.ETX Then

@@ -59,6 +59,10 @@ Public Class Console : Implements IDisposable, IConsole
         device.BackColor = color
     End Sub
 
+    Public Sub SetPS1Pattern(regexp As String)
+        device.Ps1Pattern = regexp
+    End Sub
+
     Public Sub Clear() Implements IConsole.Clear
         device.Clear()
     End Sub
@@ -71,6 +75,14 @@ Public Class Console : Implements IDisposable, IConsole
         Call Write(String.Format(s, args) & vbCr)
     End Sub
 
+    ''' <summary>
+    ''' 
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks>
+    ''' unlike the <see cref="ReadKey()"/> method, this method will not
+    ''' block the code if there is no char in the buffer.
+    ''' </remarks>
     Public Function Read() As Integer Implements IConsole.Read
         SyncLock sharedStream
             If Not sharedStream.HaveChar Then
@@ -85,6 +97,13 @@ Public Class Console : Implements IDisposable, IConsole
         Return sharedStream.GetLine
     End Function
 
+    ''' <summary>
+    ''' 
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks>
+    ''' this method could block the code executation if there is no char in the buffer. 
+    ''' </remarks>
     Public Function ReadKey() As ConsoleKeyInfo Implements IConsole.ReadKey
         Dim keyChar As Char = sharedStream.GetChar
         Dim key As ConsoleKey
