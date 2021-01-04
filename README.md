@@ -5,6 +5,8 @@ vb.net console simulator control for winform application
 
 ## How To
 
+> a reference to the source project [Microsoft.VisualBasic.Core](https://github.com/xieguigang/sciBASIC/tree/master/Microsoft.VisualBasic.Core) is required.
+
 1. Add console control to your form
 2. initialize console object in form load event:
 ```vbnet

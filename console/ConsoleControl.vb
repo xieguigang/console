@@ -62,7 +62,7 @@ Public Class ConsoleControl
     Private Sub RichTextBox1_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
         e.Handled = True
 
-        If e.KeyChar = vbCr Then
+        If e.KeyChar = ASCII.CR Then
             Me.Console.sharedStream.Commit(LastLine)
             Me.AppendText(vbLf)
             Return
