@@ -180,4 +180,8 @@ Public Class ConsoleControl
     Private Sub ConsoleControl_SelectionChanged(sender As Object, e As EventArgs) Handles Me.SelectionChanged
 
     End Sub
+
+    Private Sub ConsoleControl_LinkClicked(sender As Object, e As LinkClickedEventArgs) Handles Me.LinkClicked
+        Process.Start(e.LinkText)
+    End Sub
 End Class
