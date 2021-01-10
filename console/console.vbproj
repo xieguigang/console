@@ -140,6 +140,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HistoryPointer.vb" />
     <Compile Include="Internal.vb" />
     <Compile Include="PipelineStream.vb" />
     <Compile Include="Console.vb" />

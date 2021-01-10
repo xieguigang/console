@@ -3,8 +3,20 @@ Imports Microsoft.VisualBasic.Text
 
 Public Class PipelineStream
 
+    ''' <summary>
+    ''' <see cref="Console.ReadKey"/>
+    ''' </summary>
     Dim m_buffer As New Queue(Of Char)
+    ''' <summary>
+    ''' <see cref="Console.ReadLine"/>
+    ''' </summary>
     Dim m_commit As New Queue(Of String)
+
+    Public Sub ClearCharBuffer()
+        SyncLock m_buffer
+            Call m_buffer.Clear()
+        End SyncLock
+    End Sub
 
     Public Sub Push(c As Char)
         SyncLock m_buffer

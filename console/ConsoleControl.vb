@@ -9,7 +9,12 @@ Public Class ConsoleControl
     Friend background As Color = Color.Black
     Friend foreground As Color = Color.White
     Friend ps1 As Regex
+    Friend history As New HistoryPointer
 
+    ''' <summary>
+    ''' 获取当前用户输入的行
+    ''' </summary>
+    ''' <returns></returns>
     Public ReadOnly Property LastLine As String
         Get
             Return getLastLineRaw(offset:=getPs1StringLength)
@@ -63,7 +68,10 @@ Public Class ConsoleControl
         e.Handled = True
 
         If e.KeyChar = ASCII.CR Then
-            Me.Console.sharedStream.Commit(LastLine)
+            Dim lastLine As String = Me.LastLine
+
+            Me.Console.sharedStream.Commit(lastLine)
+            Me.history.Push(lastLine)
             Me.AppendText(vbLf)
             Return
         ElseIf e.KeyChar = ASCII.ETX Then
@@ -169,6 +177,26 @@ Public Class ConsoleControl
             Else
                 ' can not delete
                 e.Handled = False
+            End If
+        ElseIf e.KeyCode = keys.Up OrElse e.KeyCode = keys.Down Then
+            ' navigate history
+            Dim endOfHistory As Boolean = False
+            Dim historyLine As String = history.GetByKey(e.KeyCode, endOfHistory)
+
+            If endOfHistory Then
+                Return
+            Else
+                Dim offset As Integer = getPs1StringLength()
+
+                Me.Select(Me.TextLength, 0)
+                Dim lastFirst = Me.GetFirstCharIndexOfCurrentLine
+                Me.Select(lastFirst + offset, Me.TextLength - lastFirst - offset)
+                Me.SelectedText = historyLine
+
+                ' 回到光标原来的位置
+                Me.Select(cursor, 0)
+
+                Console.sharedStream.ClearCharBuffer()
             End If
         End If
     End Sub
