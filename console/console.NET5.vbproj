@@ -73,12 +73,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.WinForm.TextEditor">
-      <HintPath>..\dist\Microsoft.VisualStudio.WinForm.TextEditor.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="My Project\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
     </None>
