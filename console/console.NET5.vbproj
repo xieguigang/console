@@ -43,7 +43,7 @@
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <DefineConstants>netcore5=1</DefineConstants>
-    <OutputPath>D:\mini-R\App\</OutputPath>
+    <OutputPath>../\App\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='mzkit_win32|net48|x64'">
@@ -55,7 +55,7 @@
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <DefineConstants>netcore5=1</DefineConstants>
-    <OutputPath>D:\mini-R\App\</OutputPath>
+    <OutputPath>../\App\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
