@@ -55,7 +55,7 @@
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <DefineConstants>netcore5=1</DefineConstants>
-    <OutputPath>../\App\</OutputPath>
+    <OutputPath>../..\App\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
