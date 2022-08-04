@@ -42,6 +42,7 @@ Public Class Console : Implements IDisposable, IConsole
     End Property
 
     Public Event CancelKeyPress()
+    Public Event Tab As IConsole.TabEventHandler Implements IConsole.Tab
 
     Sub New(dev As ConsoleControl)
         device = dev
