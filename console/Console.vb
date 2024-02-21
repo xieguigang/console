@@ -1,7 +1,8 @@
-﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal.STDIO__
+﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal.STDIO__
 Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
 
-Public Class Console : Implements IDisposable, IConsole
+Public Class Console : Implements IDisposable, IConsole, IShellDevice
 
     Friend ReadOnly device As ConsoleControl
     Friend ReadOnly sharedStream As New PipelineStream
@@ -60,7 +61,7 @@ Public Class Console : Implements IDisposable, IConsole
         device.BackColor = color
     End Sub
 
-    Public Sub SetPS1Pattern(regexp As String)
+    Public Sub SetPS1Pattern(regexp As String) Implements IShellDevice.SetPrompt
         device.Ps1Pattern = regexp
     End Sub
 
@@ -94,7 +95,7 @@ Public Class Console : Implements IDisposable, IConsole
         End SyncLock
     End Function
 
-    Public Function ReadLine() As String Implements IConsole.ReadLine
+    Public Function ReadLine() As String Implements IConsole.ReadLine, IShellDevice.ReadLine
         Return sharedStream.GetLine
     End Function
 
