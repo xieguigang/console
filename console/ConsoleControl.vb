@@ -30,6 +30,8 @@ Public Class ConsoleControl
             End If
         End Get
         Set(value As String)
+            value = Strings.Trim(value).Replace("\", "/")
+            value = value.Replace("[", "\[").Replace("]", "\]")
             ps1 = New Regex(value)
         End Set
     End Property
