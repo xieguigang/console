@@ -144,13 +144,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\GCModeller\src\runtime\sciBASIC#\Microsoft.VisualBasic.Core\src\47-dotnet_Microsoft.VisualBasic.vbproj">
-      <Project>{fecce1fd-e1d4-49e3-a668-60bb5e7aed99}</Project>
-      <Name>47-dotnet_Microsoft.VisualBasic</Name>
+    <ProjectReference Include="..\..\..\..\GCModeller\src\runtime\sciBASIC#\Microsoft.VisualBasic.Core\src\Core.vbproj">
+      <Project>{52ce44c3-81cb-487d-8017-846d33448c34}</Project>
+      <Name>Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\console\console.vbproj">
-      <Project>{b17ef2af-f2de-4036-9e2a-5fa10f8116c7}</Project>
-      <Name>console</Name>
+    <ProjectReference Include="..\console\console.NET5.vbproj">
+      <Project>{08e1c795-1104-4ed9-b7a7-85e5f233a5fe}</Project>
+      <Name>console.NET5</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
