@@ -7,32 +7,9 @@
     <Configurations>Debug;Release;Rsharp_app_release;mzkit_win32</Configurations>
     <AssemblyName>Microsoft.VisualBasic.Windows.Forms.Console</AssemblyName>
     <RootNamespace>Microsoft.VisualBasic.Windows.Forms</RootNamespace>
-	  <DefineConstants>netcore5=1</DefineConstants>
+
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net48|AnyCPU'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net48|AnyCPU'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Rsharp_app_release|net48|AnyCPU'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='mzkit_win32|net48|AnyCPU'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net48|x64'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net48|x64'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Rsharp_app_release|net48|x64'">
     <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
@@ -42,21 +19,10 @@
     <DebugType>full</DebugType>
     <DefineDebug>false</DefineDebug>
     <DefineTrace>true</DefineTrace>
-    <DefineConstants>netcore5=1</DefineConstants>
-    <OutputPath>../\App\</OutputPath>
+    <OutputPath>../../../\App\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='mzkit_win32|net48|x64'">
-    <DocumentationFile>Microsoft.VisualBasic.Windows.Forms.Console.xml</DocumentationFile>
-    <RemoveIntegerChecks>true</RemoveIntegerChecks>
-    <Optimize>false</Optimize>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <DefineDebug>false</DefineDebug>
-    <DefineTrace>true</DefineTrace>
-    <DefineConstants>netcore5=1</DefineConstants>
-    <OutputPath>../..\App\</OutputPath>
-  </PropertyGroup>
 
   <ItemGroup>
     <Import Include="System.Data" />
