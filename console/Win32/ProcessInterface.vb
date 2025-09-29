@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.IO
 Imports System.Text
+Imports System.Threading
 
 Namespace Win32
 
@@ -252,8 +253,7 @@ Namespace Win32
         ''' <paramname="sender">The source of the event.</param>
         ''' <paramname="e">The <seecref="System.EventArgs"/> instance containing the event data.</param>
         Private Sub currentProcess_Exited(sender As Object, e As EventArgs)
-            '  Fire process exited.
-            FireProcessExitEvent(Process.ExitCode)
+            Dim exitCode As Integer = Process.ExitCode
 
             '  Disable the threads.
             outputWorker.CancelAsync()
@@ -265,6 +265,11 @@ Namespace Win32
             _Process = Nothing
             _ProcessFileName = Nothing
             _ProcessArguments = Nothing
+
+            Call Thread.Sleep(1000)
+
+            '  Fire process exited.
+            FireProcessExitEvent(exitCode)
         End Sub
 
         ''' <summary>
