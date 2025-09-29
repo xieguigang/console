@@ -187,8 +187,7 @@ Namespace Win32
         ''' <paramname="arguments">The arguments.</param>
         Public Sub StartProcess(fileName As String, arguments As String)
             '  Create the process start info.
-            Dim processStartInfo = New ProcessStartInfo(fileName, arguments)
-            StartProcess(processStartInfo)
+            StartProcess(New ProcessStartInfo(fileName, arguments))
         End Sub
 
         ''' <summary>
