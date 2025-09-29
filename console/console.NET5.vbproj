@@ -25,6 +25,18 @@
 
 
   <ItemGroup>
+    <Compile Remove="Console.vb" />
+    <Compile Remove="ConsoleControl.Designer.vb" />
+    <Compile Remove="ConsoleControl.vb" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <EmbeddedResource Remove="ConsoleControl.resx" />
+  </ItemGroup>
+
+
+  <ItemGroup>
     <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Windows.Forms" />
