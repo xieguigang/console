@@ -24,10 +24,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
 
         '  Show diagnostics disabled by default.
         ShowDiagnostics = False
-
         '  Input enabled by default.
         IsInputEnabled = True
-
         '  Disable special commands by default.
         SendKeyboardCommandsToProcess = False
 
@@ -76,7 +74,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs)
-        Throw New NotImplementedException()
+
     End Sub
 
     Public Event ProcessExisted()
@@ -92,9 +90,13 @@ Partial Public Class ConsoleControl : Inherits UserControl
             WriteOutput(Environment.NewLine & processInterace.ProcessFileName & " exited.", Color.FromArgb(255, 0, 255, 0))
         End If
 
-        If Not IsHandleCreated Then Return
-        '  Read only again.
-        Invoke(Sub() richTextBoxConsole.ReadOnly = True)
+        If Not IsHandleCreated Then
+            Return
+        Else
+            '  Read only again.
+            Invoke(Sub() richTextBoxConsole.ReadOnly = True)
+        End If
+
         RaiseEvent ProcessExisted()
     End Sub
 
@@ -103,10 +105,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     Private Sub InitialiseKeyMappings()
         '  Map 'tab'.
-        keyMappingsField.Add(New KeyMapping(False, False, False, Keys.Tab, "{TAB}", vbTab))
-
+        KeyMappings.Add(New KeyMapping(False, False, False, Keys.Tab, "{TAB}", vbTab))
         '  Map 'Ctrl-C'.
-        keyMappingsField.Add(New KeyMapping(True, False, False, Keys.C, "^(c)", ChrW(3) & vbCrLf))
+        KeyMappings.Add(New KeyMapping(True, False, False, Keys.C, "^(c)", ChrW(3) & vbCrLf))
     End Sub
 
     ''' <summary>
@@ -121,7 +122,13 @@ Partial Public Class ConsoleControl : Inherits UserControl
         '  Are we sending keyboard commands to the process?
         If SendKeyboardCommandsToProcess AndAlso IsProcessRunning Then
             '  Get key mappings for this key event?
-            Dim mappings = From k In keyMappingsField Where k.KeyCode = e.KeyCode AndAlso k.IsAltPressed = e.Alt AndAlso k.IsControlPressed = e.Control AndAlso k.IsShiftPressed = e.Shift Select k
+            Dim mappings = From k As KeyMapping
+                           In KeyMappings
+                           Where k.KeyCode = e.KeyCode AndAlso
+                               k.IsAltPressed = e.Alt AndAlso
+                               k.IsControlPressed = e.Control AndAlso
+                               k.IsShiftPressed = e.Shift
+                           Select k
 
             '  Go through each mapping, send the message.
             'foreach (var mapping in mappings)
@@ -139,12 +146,19 @@ Partial Public Class ConsoleControl : Inherits UserControl
         End If
 
         '  If we're at the input point and it's backspace, bail.
-        If richTextBoxConsole.SelectionStart <= inputStart AndAlso e.KeyCode = Keys.Back Then e.SuppressKeyPress = True
+        If richTextBoxConsole.SelectionStart <= inputStart AndAlso e.KeyCode = Keys.Back Then
+            e.SuppressKeyPress = True
+        End If
 
         '  Are we in the read-only zone?
         If isInReadOnlyZone Then
             '  Allow arrows and Ctrl-C.
-            If Not (e.KeyCode = Keys.Left OrElse e.KeyCode = Keys.Right OrElse e.KeyCode = Keys.Up OrElse e.KeyCode = Keys.Down OrElse e.KeyCode = Keys.C AndAlso e.Control) Then
+            If Not (e.KeyCode = Keys.Left OrElse
+                e.KeyCode = Keys.Right OrElse
+                e.KeyCode = Keys.Up OrElse
+                e.KeyCode = Keys.Down OrElse
+                e.KeyCode = Keys.C AndAlso e.Control) Then
+
                 e.SuppressKeyPress = True
             End If
         End If
@@ -165,14 +179,17 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="output">The output.</param>
     ''' <paramname="color">The color.</param>
     Public Sub WriteOutput(output As String, color As Color)
-        If String.IsNullOrEmpty(lastInput) = False AndAlso (Equals(output, lastInput) OrElse Equals(output.Replace(vbCrLf, ""), lastInput)) Then Return
-
-        If Not IsHandleCreated Then Return
+        If lastInput.StringEmpty = False AndAlso (Equals(output, lastInput) OrElse Equals(output.Replace(vbCrLf, ""), lastInput)) Then
+            Return
+        End If
+        If Not IsHandleCreated Then
+            Return
+        End If
 
         Invoke(Sub()
                    '  Write the output.
                    richTextBoxConsole.SelectionColor = color
-                   richTextBoxConsole.SelectedText += output
+                   richTextBoxConsole.SelectedText &= output
                    inputStart = richTextBoxConsole.SelectionStart
                End Sub)
     End Sub
@@ -209,8 +226,6 @@ Partial Public Class ConsoleControl : Inherits UserControl
                    FireConsoleInputEvent(input)
                End Sub)
     End Sub
-
-
 
     ''' <summary>
     ''' Runs a process.
@@ -254,7 +269,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
         processInterace.StartProcess(processStartInfo)
 
         '  If we enable input, make the control not read only.
-        If IsInputEnabled Then richTextBoxConsole.ReadOnly = False
+        If IsInputEnabled Then
+            richTextBoxConsole.ReadOnly = False
+        End If
     End Sub
 
     ''' <summary>
@@ -271,8 +288,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="content">The content.</param>
     Private Sub FireConsoleOutputEvent(content As String)
         '  Get the event.
-        Dim theEvent = OnConsoleOutputEvent
-        If theEvent IsNot Nothing Then theEvent(Me, New ConsoleEventArgs(content))
+        RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(content))
     End Sub
 
     ''' <summary>
@@ -281,14 +297,13 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="content">The content.</param>
     Private Sub FireConsoleInputEvent(content As String)
         '  Get the event.
-        Dim theEvent = OnConsoleInputEvent
-        If theEvent IsNot Nothing Then theEvent(Me, New ConsoleEventArgs(content))
+        RaiseEvent OnConsoleInput(Me, New ConsoleEventArgs(content))
     End Sub
 
     ''' <summary>
     ''' The internal process interface used to interface with the process.
     ''' </summary>
-    Private ReadOnly processInterace As ProcessInterface = New ProcessInterface()
+    Private ReadOnly processInterace As New ProcessInterface()
 
     ''' <summary>
     ''' Current position that input starts at.
@@ -306,19 +321,14 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Private lastInput As String
 
     ''' <summary>
-    ''' The key mappings.
-    ''' </summary>
-    Private keyMappingsField As List(Of KeyMapping) = New List(Of KeyMapping)()
-
-    ''' <summary>
     ''' Occurs when console output is produced.
     ''' </summary>
-    Public Event OnConsoleOutput As ConsoleEventHandler
+    Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs)
 
     ''' <summary>
     ''' Occurs when console input is produced.
     ''' </summary>
-    Public Event OnConsoleInput As ConsoleEventHandler
+    Public Event OnConsoleInput(sender As Object, args As ConsoleEventArgs)
 
     ''' <summary>
     ''' Gets or sets a value indicating whether to show diagnostics.
@@ -342,7 +352,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
         End Get
         Set(value As Boolean)
             isInputEnabledField = value
-            If IsProcessRunning Then richTextBoxConsole.ReadOnly = Not value
+
+            If IsProcessRunning Then
+                richTextBoxConsole.ReadOnly = Not value
+            End If
         End Set
     End Property
 
@@ -392,11 +405,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Gets the key mappings.
     ''' </summary>
     <Browsable(False)>
-    Public ReadOnly Property KeyMappings As List(Of KeyMapping)
-        Get
-            Return keyMappingsField
-        End Get
-    End Property
+    Public ReadOnly Property KeyMappings As New List(Of KeyMapping)
 
     ''' <summary>
     ''' Gets or sets the font of the text displayed by the control.
@@ -442,10 +451,4 @@ Partial Public Class ConsoleControl : Inherits UserControl
             richTextBoxConsole.BackColor = value
         End Set
     End Property
-End Class
-
-''' <summary>
-''' Used to allow us to find resources properly.
-''' </summary>
-Public Class Resfinder
 End Class
