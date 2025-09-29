@@ -28,32 +28,32 @@ Namespace Win32
         ''' <summary>
         ''' The output worker.
         ''' </summary>
-        Private outputWorker As BackgroundWorker = New BackgroundWorker()
+        Private outputWorker As New BackgroundWorker()
 
         ''' <summary>
         ''' The error worker.
         ''' </summary>
-        Private errorWorker As BackgroundWorker = New BackgroundWorker()
+        Private errorWorker As New BackgroundWorker()
 
         ''' <summary>
         ''' Occurs when process output is produced.
         ''' </summary>
-        Public Event OnProcessOutput As ProcessEventHandler
+        Public Event OnProcessOutput(sender As Object, args As ProcessEventArgs)
 
         ''' <summary>
         ''' Occurs when process error output is produced.
         ''' </summary>
-        Public Event OnProcessError As ProcessEventHandler
+        Public Event OnProcessError(sender As Object, args As ProcessEventArgs)
 
         ''' <summary>
         ''' Occurs when process input is produced.
         ''' </summary>
-        Public Event OnProcessInput As ProcessEventHandler
+        Public Event OnProcessInput(sender As Object, args As ProcessEventArgs)
 
         ''' <summary>
         ''' Occurs when the process ends.
         ''' </summary>
-        Public Event OnProcessExit As ProcessEventHandler
+        Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
 
         ''' <summary>
         ''' Gets a value indicating whether this instance is process running.
@@ -136,7 +136,7 @@ Namespace Win32
                     outputWorker.ReportProgress(0, builder.ToString())
                 Loop While count > 0
 
-                Threading.Thread.Sleep(200)
+                Call Thread.Sleep(200)
             End While
         End Sub
 
@@ -170,7 +170,7 @@ Namespace Win32
                     errorWorker.ReportProgress(0, builder.ToString())
                 Loop While count > 0
 
-                Threading.Thread.Sleep(200)
+                Call Thread.Sleep(200)
             End While
         End Sub
 
@@ -234,7 +234,9 @@ Namespace Win32
         ''' </summary>
         Public Sub StopProcess()
             '  Handle the trivial case.
-            If IsProcessRunning = False Then Return
+            If IsProcessRunning = False Then
+                Return
+            End If
 
             '  Kill the process.
             Process.Kill()
@@ -271,8 +273,7 @@ Namespace Win32
         ''' <paramname="content">The content.</param>
         Private Sub FireProcessOutputEvent(content As String)
             '  Get the event and fire it.
-            Dim theEvent = OnProcessOutputEvent
-            If theEvent IsNot Nothing Then theEvent(Me, New ProcessEventArgs(content))
+            RaiseEvent OnProcessOutput(Me, New ProcessEventArgs(content))
         End Sub
 
         ''' <summary>
@@ -281,8 +282,7 @@ Namespace Win32
         ''' <paramname="content">The content.</param>
         Private Sub FireProcessErrorEvent(content As String)
             '  Get the event and fire it.
-            Dim theEvent = OnProcessErrorEvent
-            If theEvent IsNot Nothing Then theEvent(Me, New ProcessEventArgs(content))
+            RaiseEvent OnProcessError(Me, New ProcessEventArgs(content))
         End Sub
 
         ''' <summary>
@@ -291,8 +291,7 @@ Namespace Win32
         ''' <paramname="content">The content.</param>
         Private Sub FireProcessInputEvent(content As String)
             '  Get the event and fire it.
-            Dim theEvent = OnProcessInputEvent
-            If theEvent IsNot Nothing Then theEvent(Me, New ProcessEventArgs(content))
+            RaiseEvent OnProcessInput(Me, New ProcessEventArgs(content))
         End Sub
 
         ''' <summary>
@@ -301,8 +300,7 @@ Namespace Win32
         ''' <paramname="code">The code.</param>
         Private Sub FireProcessExitEvent(code As Integer)
             '  Get the event and fire it.
-            Dim theEvent = OnProcessExitEvent
-            If theEvent IsNot Nothing Then theEvent(Me, New ProcessEventArgs(code))
+            RaiseEvent OnProcessExit(Me, New ProcessEventArgs(code))
         End Sub
 
         ''' <summary>

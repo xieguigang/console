@@ -16,6 +16,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
     End Property
 
     ''' <summary>
+    ''' The internal process interface used to interface with the process.
+    ''' </summary>
+    ReadOnly processInterace As New ProcessInterface()
+
+    ''' <summary>
     ''' Initializes a new instance of the <seecref="ConsoleControl"/> class.
     ''' </summary>
     Public Sub New()
@@ -299,11 +304,6 @@ Partial Public Class ConsoleControl : Inherits UserControl
         '  Get the event.
         RaiseEvent OnConsoleInput(Me, New ConsoleEventArgs(content))
     End Sub
-
-    ''' <summary>
-    ''' The internal process interface used to interface with the process.
-    ''' </summary>
-    Private ReadOnly processInterace As New ProcessInterface()
 
     ''' <summary>
     ''' Current position that input starts at.
