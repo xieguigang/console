@@ -2,16 +2,8 @@
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
 ''' <summary>
-''' The console event handler is used for console events.
-''' </summary>
-''' <paramname="sender">The sender.</param>
-''' <paramname="args">The <seecref="ConsoleEventArgs"/> instance containing the event data.</param>
-Public Delegate Sub ConsoleEventHandler(sender As Object, args As ConsoleEventArgs)
-
-''' <summary>
 ''' The Console Control allows you to embed a basic console in your application.
 ''' </summary>
-<Drawing.ToolboxBitmapAttribute(GetType(Resfinder), "ConsoleControl.ConsoleControl.bmp")>
 Partial Public Class ConsoleControl : Inherits UserControl
 
     Public Property [ReadOnly] As Boolean
