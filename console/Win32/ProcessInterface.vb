@@ -328,30 +328,34 @@ Namespace Win32
         ''' <paramname="native">
         '''   <c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         Protected Sub Dispose(native As Boolean)
-            If outputWorker IsNot Nothing Then
-                outputWorker.Dispose()
-                outputWorker = Nothing
-            End If
-            If errorWorker IsNot Nothing Then
-                errorWorker.Dispose()
-                errorWorker = Nothing
-            End If
-            If Process IsNot Nothing Then
-                _Process.Dispose()
-                _Process = Nothing
-            End If
-            If inputWriter IsNot Nothing Then
-                inputWriter.Dispose()
-                inputWriter = Nothing
-            End If
-            If outputReader IsNot Nothing Then
-                outputReader.Dispose()
-                outputReader = Nothing
-            End If
-            If errorReader IsNot Nothing Then
-                errorReader.Dispose()
-                errorReader = Nothing
-            End If
+            Try
+                If outputWorker IsNot Nothing Then
+                    outputWorker.Dispose()
+                    outputWorker = Nothing
+                End If
+                If errorWorker IsNot Nothing Then
+                    errorWorker.Dispose()
+                    errorWorker = Nothing
+                End If
+                If Process IsNot Nothing Then
+                    _Process.Dispose()
+                    _Process = Nothing
+                End If
+                If inputWriter IsNot Nothing Then
+                    inputWriter.Dispose()
+                    inputWriter = Nothing
+                End If
+                If outputReader IsNot Nothing Then
+                    outputReader.Dispose()
+                    outputReader = Nothing
+                End If
+                If errorReader IsNot Nothing Then
+                    errorReader.Dispose()
+                    errorReader = Nothing
+                End If
+            Catch ex As Exception
+
+            End Try
         End Sub
 
         ''' <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
