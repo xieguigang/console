@@ -1,5 +1,7 @@
 ﻿'Imports System.ComponentModel
 
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal
+
 Public Class Form1
 
     '    Dim WithEvents console As Microsoft.VisualBasic.Windows.Forms.Console
@@ -9,8 +11,10 @@ Public Class Form1
         '        console.ForegroundColor = ConsoleColor.White
         '        console.SetConsoleBackColor(Color.DodgerBlue)
 
+        Call ConsoleControl1.WriteAnsiEscape(New TextSpan("Hello", AnsiColor.Red) & AnsiEscapeCodes.Reset & " " & New TextSpan("World!", AnsiColor.Blue) & AnsiEscapeCodes.Reset)
+
         '        Call DemoInterpreter.Start(console)
-        ConsoleControl1.StartProcess("cmd", Nothing)
+        Call ConsoleControl1.StartProcess("cmd", Nothing)
     End Sub
 
     '    Private Sub console_CancelKeyPress() Handles console.CancelKeyPress

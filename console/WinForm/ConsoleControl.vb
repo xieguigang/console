@@ -191,6 +191,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
                End Sub)
     End Sub
 
+    Public Sub WriteAnsiEscape(ansiText As String)
+        Call AnsiEscapeRenderer.RenderAnsiText(richTextBoxConsole, ansiText)
+    End Sub
+
     ''' <summary>
     ''' Clears the output.
     ''' </summary>
