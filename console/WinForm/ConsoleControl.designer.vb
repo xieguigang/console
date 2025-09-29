@@ -53,5 +53,5 @@ Partial Class ConsoleControl
 
 #End Region
 
-    Private richTextBoxConsole As System.Windows.Forms.RichTextBox
+    Private WithEvents richTextBoxConsole As System.Windows.Forms.RichTextBox
 End Class

@@ -18,7 +18,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' The internal process interface used to interface with the process.
     ''' </summary>
-    ReadOnly processInterace As New ProcessInterface()
+    Dim WithEvents processInterace As New ProcessInterface()
 
     ''' <summary>
     ''' Initializes a new instance of the <seecref="ConsoleControl"/> class.
@@ -35,16 +35,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
         SendKeyboardCommandsToProcess = False
 
         '  Initialise the keymappings.
-        InitialiseKeyMappings()
-
-        '  Handle process events.
-        AddHandler processInterace.OnProcessOutput, AddressOf processInterace_OnProcessOutput
-        AddHandler processInterace.OnProcessError, AddressOf processInterace_OnProcessError
-        AddHandler processInterace.OnProcessInput, AddressOf processInterace_OnProcessInput
-        AddHandler processInterace.OnProcessExit, AddressOf processInterace_OnProcessExit
-
-        '  Wait for key down messages on the rich text box.
-        AddHandler richTextBoxConsole.KeyDown, AddressOf richTextBoxConsole_KeyDown
+        Call InitialiseKeyMappings()
     End Sub
 
     ''' <summary>
@@ -52,7 +43,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs)
+    Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessError
         '  Write the output, in red
         WriteOutput(args.Content, Color.Red)
 
@@ -65,7 +56,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs)
+    Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessOutput
         '  Write the output, in white
         WriteOutput(args.Content, Color.White)
 
@@ -78,7 +69,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs)
+    Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessInput
 
     End Sub
 
@@ -89,7 +80,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs)
+    Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessExit
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
             WriteOutput(Environment.NewLine & processInterace.ProcessFileName & " exited.", Color.FromArgb(255, 0, 255, 0))
@@ -120,7 +111,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
-    Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs)
+    Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs) Handles richTextBoxConsole.KeyDown
         '  Check whether we are in the read-only zone.
         Dim isInReadOnlyZone = richTextBoxConsole.SelectionStart < inputStart
 
@@ -171,10 +162,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
         '  Write the input if we hit return and we're NOT in the read only zone.
         If e.KeyCode = Keys.Return AndAlso Not isInReadOnlyZone Then
             '  Get the input.
-            Dim input = richTextBoxConsole.Text.Substring(inputStart, richTextBoxConsole.SelectionStart - inputStart)
+            Dim strlen As Integer = richTextBoxConsole.SelectionStart - inputStart
+            Dim input = richTextBoxConsole.Text.Substring(inputStart, strlen)
 
             '  Write the input (without echoing).
-            WriteInput(input, Color.White, False)
+            Call WriteInput(input, Color.White, False)
         End If
     End Sub
 
@@ -218,12 +210,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
                    '  Are we echoing?
                    If echo Then
                        richTextBoxConsole.SelectionColor = color
-                       richTextBoxConsole.SelectedText += input
+                       richTextBoxConsole.SelectedText &= input
                        inputStart = richTextBoxConsole.SelectionStart
                    End If
 
                    lastInput = input
-
                    '  Write the input.
                    processInterace.WriteInput(input)
 
