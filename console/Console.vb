@@ -1,164 +1,60 @@
 ﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal
 Imports Microsoft.VisualBasic.ApplicationServices.Terminal.STDIO__
-Imports Microsoft.VisualBasic.ApplicationServices.Terminal.xConsole
+Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
-Public Class Console : Implements IDisposable, IConsole, IShellDevice
+Public Class Console : Inherits AbstractProcessInterface
+    Implements IDisposable, IConsole, IShellDevice
 
-    Friend ReadOnly device As ConsoleControl
-    Friend ReadOnly sharedStream As New PipelineStream
 
-    Public Property BackgroundColor As ConsoleColor Implements IConsole.BackgroundColor
-        Get
-            Dim cl As Color = device.background
-            Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
 
-            Return enumCl
-        End Get
-        Set(value As ConsoleColor)
-            device.background = Internal.FromConsoleColor(value.ToString)
-        End Set
-    End Property
+    Public Sub New()
+        MyBase.New(void:=Nothing)
 
-    Public Property ForegroundColor As ConsoleColor Implements IConsole.ForegroundColor
-        Get
-            Dim cl As Color = device.foreground
-            Dim enumCl As ConsoleColor = xConsole.ClosestConsoleColor(cl.R, cl.G, cl.B)
-
-            Return enumCl
-        End Get
-        Set(value As ConsoleColor)
-            device.foreground = Internal.FromConsoleColor(value.ToString)
-        End Set
-    End Property
+        inputWriter =
+    End Sub
 
     Public ReadOnly Property WindowWidth As Integer Implements IConsole.WindowWidth
-        Get
-            Using g = Graphics.FromHwnd(device.Handle)
-                Dim size As SizeF = g.MeasureString("*", device.Font)
-                Dim count As Integer = device.Size.Width / size.Width
+    Public Property BackgroundColor As ConsoleColor Implements IConsole.BackgroundColor
+    Public Property ForegroundColor As ConsoleColor Implements IConsole.ForegroundColor
 
-                Return count
-            End Using
-        End Get
-    End Property
-
-    Public Event CancelKeyPress()
     Public Event Tab As IConsole.TabEventHandler Implements IConsole.Tab
 
-    Sub New(dev As ConsoleControl)
-        device = dev
+    Public Sub Clear() Implements IWriteDevice.Clear
     End Sub
 
-    Friend Sub TriggerCancelKeyPress()
-        RaiseEvent CancelKeyPress()
+    Public Sub Write(str As String) Implements IWriteDevice.Write
+        Throw New NotImplementedException()
     End Sub
 
-    Public Sub SetConsoleForeColor(color As Color)
-        device.ForeColor = color
+    Public Sub WriteLine() Implements IWriteDevice.WriteLine
+        Throw New NotImplementedException()
     End Sub
 
-    Public Sub SetConsoleBackColor(color As Color)
-        device.BackColor = color
+    Public Sub WriteLine(str As String) Implements IWriteDevice.WriteLine
+        Throw New NotImplementedException()
     End Sub
 
-    Public Sub SetPS1Pattern(regexp As String) Implements IShellDevice.SetPrompt
-        device.Ps1Pattern = regexp
+    Public Sub WriteLine(s As String, ParamArray args() As Object) Implements IWriteDevice.WriteLine
+        Throw New NotImplementedException()
     End Sub
 
-    Public Sub Clear() Implements IConsole.Clear
-        device.Clear()
+    Public Sub SetPrompt(s As String) Implements IShellDevice.SetPrompt
+        Throw New NotImplementedException()
     End Sub
 
-    Public Sub WriteLine() Implements IConsole.WriteLine
-        Call Write(vbCr)
-    End Sub
-
-    Public Sub WriteLine(s As String, ParamArray args() As Object) Implements IConsole.WriteLine
-        Call Write(String.Format(s, args) & vbCr)
-    End Sub
-
-    ''' <summary>
-    ''' 
-    ''' </summary>
-    ''' <returns></returns>
-    ''' <remarks>
-    ''' unlike the <see cref="ReadKey()"/> method, this method will not
-    ''' block the code if there is no char in the buffer.
-    ''' </remarks>
-    Public Function Read() As Integer Implements IConsole.Read
-        SyncLock sharedStream
-            If Not sharedStream.HaveChar Then
-                Return -1
-            Else
-                Return AscW(sharedStream.GetChar)
-            End If
-        End SyncLock
+    Public Function ReadLine() As String Implements IReadDevice.ReadLine
+        Throw New NotImplementedException()
     End Function
 
-    Public Function ReadLine() As String Implements IConsole.ReadLine, IShellDevice.ReadLine
-        Return sharedStream.GetLine
+    Public Function Read() As Integer Implements IReadDevice.Read
+        Throw New NotImplementedException()
     End Function
 
-    ''' <summary>
-    ''' 
-    ''' </summary>
-    ''' <returns></returns>
-    ''' <remarks>
-    ''' this method could block the code executation if there is no char in the buffer. 
-    ''' </remarks>
-    Public Function ReadKey() As ConsoleKeyInfo Implements IConsole.ReadKey
-        Dim keyChar As Char = sharedStream.GetChar
-        Dim key As ConsoleKey
-        Dim info As New ConsoleKeyInfo(keyChar, key, shift:=False, alt:=False, control:=False)
-
-        Return info
+    Public Function ReadKey() As ConsoleKeyInfo Implements IReadDevice.ReadKey
+        Throw New NotImplementedException()
     End Function
 
-    Public Sub Write(str As String) Implements IConsole.Write
-        Call device.Invoke(Sub() device.write(str))
-    End Sub
-
-    Public Sub WriteLine(str As String) Implements IConsole.WriteLine
-        Call device.Invoke(Sub() device.write(str & vbCr))
-    End Sub
-
-    Public Sub WriteLine(img As Image)
-        Dim bitmap As Bitmap = img
-        Dim backup = Clipboard.GetDataObject
-
-        Call WriteLine("")
-
-        Clipboard.SetDataObject(bitmap)
-        device.Invoke(Sub() device.Paste(DataFormats.GetFormat(DataFormats.Bitmap)))
-        Clipboard.SetDataObject(backup)
-
-        Call WriteLine("")
-    End Sub
-
-    Protected Overridable Sub Dispose(disposing As Boolean)
-        If Not disposedValue Then
-            If disposing Then
-                ' TODO: dispose managed state (managed objects)
-            End If
-
-            ' TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            ' TODO: set large fields to null
-            disposedValue = True
-        End If
-    End Sub
-
-    ' ' TODO: override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
-    ' Protected Overrides Sub Finalize()
-    '     ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
-    '     Dispose(disposing:=False)
-    '     MyBase.Finalize()
-    ' End Sub
-
-    Private disposedValue As Boolean
-
-    Public Sub Dispose() Implements IDisposable.Dispose
-        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
-        Dispose(disposing:=True)
-        GC.SuppressFinalize(Me)
-    End Sub
+    Private Function IShellDevice_ReadLine() As String Implements IShellDevice.ReadLine
+        Return ReadLine()
+    End Function
 End Class

@@ -25,7 +25,6 @@
 
 
   <ItemGroup>
-    <Compile Remove="Console.vb" />
     <Compile Remove="ConsoleControl.Designer.vb" />
     <Compile Remove="ConsoleControl.vb" />
   </ItemGroup>
