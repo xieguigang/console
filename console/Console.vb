@@ -1,16 +1,21 @@
-﻿Imports Microsoft.VisualBasic.ApplicationServices.Terminal
+﻿Imports System.IO
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal
 Imports Microsoft.VisualBasic.ApplicationServices.Terminal.STDIO__
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
 Public Class Console : Inherits AbstractProcessInterface
     Implements IDisposable, IConsole, IShellDevice
 
-
+    Dim stdin As New MemoryStream
+    Dim stdout As New MemoryStream
+    Dim stderr As New MemoryStream
 
     Public Sub New()
         MyBase.New(void:=Nothing)
 
-        inputWriter =
+        inputWriter = New StreamWriter(stdin)
+        outputReader = New StreamReader(stdout)
+        errorReader = New StreamReader(stderr)
     End Sub
 
     Public ReadOnly Property WindowWidth As Integer Implements IConsole.WindowWidth
@@ -23,38 +28,38 @@ Public Class Console : Inherits AbstractProcessInterface
     End Sub
 
     Public Sub Write(str As String) Implements IWriteDevice.Write
-        Throw New NotImplementedException()
+
     End Sub
 
     Public Sub WriteLine() Implements IWriteDevice.WriteLine
-        Throw New NotImplementedException()
+        Call Write(vbLf)
     End Sub
 
     Public Sub WriteLine(str As String) Implements IWriteDevice.WriteLine
-        Throw New NotImplementedException()
+        Call Write(str & vbLf)
     End Sub
 
     Public Sub WriteLine(s As String, ParamArray args() As Object) Implements IWriteDevice.WriteLine
-        Throw New NotImplementedException()
+        Call WriteLine(String.Format(s, args))
     End Sub
 
-    Public Sub SetPrompt(s As String) Implements IShellDevice.SetPrompt
-        Throw New NotImplementedException()
-    End Sub
+    Public Function ReadLine() As String Implements IReadDevice.ReadLine, IShellDevice.ReadLine
 
-    Public Function ReadLine() As String Implements IReadDevice.ReadLine
-        Throw New NotImplementedException()
     End Function
 
     Public Function Read() As Integer Implements IReadDevice.Read
-        Throw New NotImplementedException()
+
     End Function
 
     Public Function ReadKey() As ConsoleKeyInfo Implements IReadDevice.ReadKey
-        Throw New NotImplementedException()
+
     End Function
 
-    Private Function IShellDevice_ReadLine() As String Implements IShellDevice.ReadLine
-        Return ReadLine()
-    End Function
+    ''' <summary>
+    ''' set ps1
+    ''' </summary>
+    ''' <param name="s"></param>
+    Public Sub SetPrompt(s As String) Implements IShellDevice.SetPrompt
+        Throw New NotImplementedException()
+    End Sub
 End Class
