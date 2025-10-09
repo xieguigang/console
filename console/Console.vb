@@ -23,6 +23,7 @@ Public Class Console : Inherits AbstractProcessInterface
     Public Property ForegroundColor As ConsoleColor Implements IConsole.ForegroundColor
 
     Public Event Tab As IConsole.TabEventHandler Implements IConsole.Tab
+    Public Event CancelKeyPress()
 
     Public Sub Clear() Implements IWriteDevice.Clear
     End Sub

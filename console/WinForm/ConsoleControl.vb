@@ -38,6 +38,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
         Call InitialiseKeyMappings()
     End Sub
 
+    Public Function GetInterface() As AbstractProcessInterface
+        Return ProcessInterface
+    End Function
+
     ''' <summary>
     ''' Handles the OnProcessError event of the processInterace control.
     ''' </summary>
