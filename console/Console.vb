@@ -61,10 +61,10 @@ Public Class Console : Inherits AbstractProcessInterface
     ''' </summary>
     ''' <param name="s"></param>
     Public Sub SetPrompt(s As String) Implements IShellDevice.SetPrompt
-        Throw New NotImplementedException()
+
     End Sub
 
     Public Overrides Sub WriteInput(input As String)
-        Throw New NotImplementedException()
+
     End Sub
 End Class
