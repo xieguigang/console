@@ -47,6 +47,8 @@ Namespace Win32
         ''' </summary>
         Public Event OnProcessInput(sender As Object, args As ProcessEventArgs)
 
+        Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
+
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessInterface"/> class.
         ''' </summary>
@@ -59,6 +61,17 @@ Namespace Win32
             errorWorker.WorkerReportsProgress = True
             errorWorker.WorkerSupportsCancellation = True
         End Sub
+
+        ''' <summary>
+        ''' Fires the process exit event.
+        ''' </summary>
+        ''' <paramname="code">The code.</param>
+        Protected Sub FireProcessExitEvent(code As Integer)
+            '  Get the event and fire it.
+            RaiseEvent OnProcessExit(Me, New ProcessEventArgs(code))
+        End Sub
+
+        Public MustOverride Sub WriteInput(input As String)
 
         ''' <summary>
         ''' Handles the ProgressChanged event of the outputWorker control.

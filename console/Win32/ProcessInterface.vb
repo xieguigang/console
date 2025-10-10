@@ -43,11 +43,6 @@ Namespace Win32
         ''' </summary>
         Public ReadOnly Property ProcessArguments As String
 
-        ''' <summary>
-        ''' Occurs when the process ends.
-        ''' </summary>
-        Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
-
         Sub New()
             Call MyBase.New(void:=Nothing)
         End Sub
@@ -140,25 +135,15 @@ Namespace Win32
             _ProcessArguments = Nothing
 
             Call Thread.Sleep(1000)
-
-            '  Fire process exited.
-            FireProcessExitEvent(exitCode)
-        End Sub
-
-        ''' <summary>
-        ''' Fires the process exit event.
-        ''' </summary>
-        ''' <paramname="code">The code.</param>
-        Private Sub FireProcessExitEvent(code As Integer)
-            '  Get the event and fire it.
-            RaiseEvent OnProcessExit(Me, New ProcessEventArgs(code))
+            ' Fire process exited.
+            Call FireProcessExitEvent(exitCode)
         End Sub
 
         ''' <summary>
         ''' Writes the input.
         ''' </summary>
         ''' <paramname="input">The input.</param>
-        Public Sub WriteInput(input As String)
+        Public Overrides Sub WriteInput(input As String)
             If IsProcessRunning Then
                 inputWriter.WriteLine(input)
                 inputWriter.Flush()

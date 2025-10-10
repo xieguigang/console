@@ -18,7 +18,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' The internal process interface used to interface with the process.
     ''' </summary>
-    Dim WithEvents processInterace As New ProcessInterface()
+    Dim WithEvents m_console As AbstractProcessInterface
 
     ''' <summary>
     ''' Initializes a new instance of the <seecref="ConsoleControl"/> class.
@@ -33,9 +33,14 @@ Partial Public Class ConsoleControl : Inherits UserControl
         IsInputEnabled = True
         '  Disable special commands by default.
         SendKeyboardCommandsToProcess = False
+        m_console = New ProcessInterface
 
         '  Initialise the keymappings.
         Call InitialiseKeyMappings()
+    End Sub
+
+    Public Sub SetConsoleCore([interface] As AbstractProcessInterface)
+        m_console = [interface]
     End Sub
 
     Public Function GetInterface() As AbstractProcessInterface
@@ -47,7 +52,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessError
+    Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessError
         '  Write the output, in red
         WriteOutput(args.Content, Color.Red)
 
@@ -60,7 +65,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessOutput
+    Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessOutput
         '  Write the output, in white
         WriteOutput(args.Content, Color.White)
 
@@ -73,7 +78,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessInput
+    Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessInput
 
     End Sub
 
@@ -84,10 +89,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
-    Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs) Handles processInterace.OnProcessExit
+    Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessExit
         '  Are we showing diagnostics?
-        If ShowDiagnostics Then
-            WriteOutput(Environment.NewLine & processInterace.ProcessFileName & " exited.", Color.FromArgb(255, 0, 255, 0))
+        If ShowDiagnostics AndAlso TypeOf ProcessInterface Is ProcessInterface Then
+            WriteOutput(Environment.NewLine & DirectCast(m_console, ProcessInterface).ProcessFileName & " exited.", Color.FromArgb(255, 0, 255, 0))
         End If
 
         If Not IsHandleCreated Then
@@ -224,7 +229,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
 
                    lastInput = input
                    '  Write the input.
-                   processInterace.WriteInput(input)
+                   m_console.WriteInput(input)
 
                    '  Fire the event.
                    FireConsoleInputEvent(input)
@@ -247,11 +252,17 @@ Partial Public Class ConsoleControl : Inherits UserControl
             End If
         End If
 
-        '  Start the process.
-        processInterace.StartProcess(fileName, arguments)
+        If TypeOf ProcessInterface Is ProcessInterface Then
+            '  Start the process.
+            Call DirectCast(m_console, ProcessInterface).StartProcess(fileName, arguments)
 
-        '  If we enable input, make the control not read only.
-        If IsInputEnabled Then richTextBoxConsole.ReadOnly = False
+            '  If we enable input, make the control not read only.
+            If IsInputEnabled Then
+                richTextBoxConsole.ReadOnly = False
+            End If
+        Else
+            Call "Can not start external process".warning
+        End If
     End Sub
 
     ''' <summary>
@@ -269,12 +280,14 @@ Partial Public Class ConsoleControl : Inherits UserControl
             End If
         End If
 
-        '  Start the process.
-        processInterace.StartProcess(processStartInfo)
+        If TypeOf ProcessInterface Is ProcessInterface Then
+            '  Start the process.
+            Call DirectCast(m_console, ProcessInterface).StartProcess(processStartInfo)
 
-        '  If we enable input, make the control not read only.
-        If IsInputEnabled Then
-            richTextBoxConsole.ReadOnly = False
+            '  If we enable input, make the control not read only.
+            If IsInputEnabled Then
+                richTextBoxConsole.ReadOnly = False
+            End If
         End If
     End Sub
 
@@ -282,8 +295,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Stops the process.
     ''' </summary>
     Public Sub StopProcess()
-        '  Stop the interface.
-        processInterace.StopProcess()
+        If TypeOf ProcessInterface Is ProcessInterface Then
+            '  Stop the interface.
+            Call DirectCast(m_console, ProcessInterface).StopProcess()
+        End If
     End Sub
 
     ''' <summary>
@@ -312,7 +327,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' The is input enabled flag.
     ''' </summary>
-    Private isInputEnabledField As Boolean = True
+    Private m_isInputEnabled As Boolean = True
 
     ''' <summary>
     ''' The last input string (used so that we can make sure we don't echo input twice).
@@ -347,10 +362,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
     <Category("Console Control"), Description("If true, the user can key in input.")>
     Public Property IsInputEnabled As Boolean
         Get
-            Return isInputEnabledField
+            Return m_isInputEnabled
         End Get
         Set(value As Boolean)
-            isInputEnabledField = value
+            m_isInputEnabled = value
 
             If IsProcessRunning Then
                 richTextBoxConsole.ReadOnly = Not value
@@ -376,7 +391,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
     <Browsable(False)>
     Public ReadOnly Property IsProcessRunning As Boolean
         Get
-            Return processInterace.IsProcessRunning
+            If TypeOf ProcessInterface Is ProcessInterface Then
+                Return DirectCast(m_console, ProcessInterface).IsProcessRunning
+            End If
+
+            Return False
         End Get
     End Property
 
@@ -394,9 +413,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Gets the process interface.
     ''' </summary>
     <Browsable(False)>
-    Public ReadOnly Property ProcessInterface As ProcessInterface
+    Public ReadOnly Property ProcessInterface As AbstractProcessInterface
         Get
-            Return processInterace
+            Return m_console
         End Get
     End Property
 
