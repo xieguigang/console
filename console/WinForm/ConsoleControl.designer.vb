@@ -24,30 +24,32 @@ Partial Class ConsoleControl
     ''' the contents of this method with the code editor.
     ''' </summary>
     Private Sub InitializeComponent()
-        richTextBoxConsole = New System.Windows.Forms.RichTextBox()
-        SuspendLayout()
-        ' 
-        ' richTextBoxConsole
-        ' 
-        richTextBoxConsole.AcceptsTab = True
-        richTextBoxConsole.BackColor = Drawing.Color.Black
-        richTextBoxConsole.Dock = System.Windows.Forms.DockStyle.Fill
-        richTextBoxConsole.Font = New Drawing.Font("Consolas", 12.0F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, 0)
-        richTextBoxConsole.ForeColor = Drawing.Color.White
-        richTextBoxConsole.Location = New Drawing.Point(0, 0)
-        richTextBoxConsole.Name = "richTextBoxConsole"
-        richTextBoxConsole.ReadOnly = True
-        richTextBoxConsole.Size = New Drawing.Size(150, 150)
-        richTextBoxConsole.TabIndex = 0
-        richTextBoxConsole.Text = ""
-        ' 
-        ' ConsoleControl
-        ' 
-        AutoScaleDimensions = New Drawing.SizeF(6.0F, 13.0F)
-        AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Controls.Add(richTextBoxConsole)
-        Name = "ConsoleControl"
-        ResumeLayout(False)
+        Me.richTextBoxConsole = New System.Windows.Forms.RichTextBox()
+        Me.SuspendLayout()
+        '
+        'richTextBoxConsole
+        '
+        Me.richTextBoxConsole.AcceptsTab = True
+        Me.richTextBoxConsole.BackColor = System.Drawing.Color.Black
+        Me.richTextBoxConsole.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.richTextBoxConsole.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.richTextBoxConsole.Font = New System.Drawing.Font("Consolas", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.richTextBoxConsole.ForeColor = System.Drawing.Color.White
+        Me.richTextBoxConsole.Location = New System.Drawing.Point(0, 0)
+        Me.richTextBoxConsole.Name = "richTextBoxConsole"
+        Me.richTextBoxConsole.ReadOnly = True
+        Me.richTextBoxConsole.Size = New System.Drawing.Size(658, 450)
+        Me.richTextBoxConsole.TabIndex = 0
+        Me.richTextBoxConsole.Text = ""
+        '
+        'ConsoleControl
+        '
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.richTextBoxConsole)
+        Me.Name = "ConsoleControl"
+        Me.Size = New System.Drawing.Size(658, 450)
+        Me.ResumeLayout(False)
 
     End Sub
 
