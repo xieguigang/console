@@ -7,6 +7,9 @@
     <Configurations>Debug;Release;Rsharp_app_release;mzkit_win32</Configurations>
     <AssemblyName>Microsoft.VisualBasic.Windows.Forms.Console</AssemblyName>
     <RootNamespace>Microsoft.VisualBasic.Windows.Forms</RootNamespace>
+    <MyType>WindowsForms</MyType>
+    <StartupObject>Microsoft.VisualBasic.Windows.Forms.My.MyApplication</StartupObject>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
   </PropertyGroup>
 
