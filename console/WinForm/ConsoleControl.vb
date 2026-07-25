@@ -469,4 +469,14 @@ Partial Public Class ConsoleControl : Inherits UserControl
             richTextBoxConsole.BackColor = value
         End Set
     End Property
+
+    Public Overrides Property ForeColor As Color
+        Get
+            Return MyBase.ForeColor
+        End Get
+        Set(value As Color)
+            MyBase.ForeColor = value
+            richTextBoxConsole.ForeColor = value
+        End Set
+    End Property
 End Class
