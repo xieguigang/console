@@ -282,6 +282,31 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
     Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs) Handles richTextBoxConsole.KeyDown
+        '  When input is enabled and there is an active input line, emulate a native
+        '  console's single caret: for any key that affects input, move the caret back
+        '  to the end of the current input line so typing works from anywhere.
+        If m_isInputEnabled AndAlso inputStart >= 0 Then
+            Dim inputEnd As Integer = richTextBoxConsole.TextLength
+
+            '  Navigation (arrows) and Ctrl-C copy remain usable in the history area.
+            Dim isNavigationKey = e.KeyCode = Keys.Left OrElse
+                                  e.KeyCode = Keys.Right OrElse
+                                  e.KeyCode = Keys.Up OrElse
+                                  e.KeyCode = Keys.Down
+            Dim isCopyKey = e.KeyCode = Keys.C AndAlso e.Control
+
+            '  Backspace only counts as an input key when there is something to delete.
+            Dim isBackspaceKey = e.KeyCode = Keys.Back
+            Dim isInputKey = Not isNavigationKey AndAlso Not isCopyKey AndAlso
+                             (Not isBackspaceKey OrElse inputEnd > inputStart)
+
+            If isInputKey AndAlso richTextBoxConsole.SelectionStart <> inputEnd Then
+                richTextBoxConsole.SelectionStart = inputEnd
+                richTextBoxConsole.SelectionLength = 0
+                richTextBoxConsole.ScrollToCaret()
+            End If
+        End If
+
         '  Check whether we are in the read-only zone.
         Dim isInReadOnlyZone = richTextBoxConsole.SelectionStart < inputStart
 
@@ -354,10 +379,14 @@ Partial Public Class ConsoleControl : Inherits UserControl
         End If
 
         Invoke(Sub()
-                   '  Write the output.
+                   '  Always append at the end of the content, regardless of where the
+                   '  caret/selection currently is (matches native console behaviour).
+                   richTextBoxConsole.SelectionStart = richTextBoxConsole.TextLength
+                   richTextBoxConsole.SelectionLength = 0
                    richTextBoxConsole.SelectionColor = color
-                   richTextBoxConsole.SelectedText &= output
-                   inputStart = richTextBoxConsole.SelectionStart
+                   richTextBoxConsole.AppendText(output)
+                   inputStart = richTextBoxConsole.TextLength
+                   richTextBoxConsole.ScrollToCaret()
                End Sub)
     End Sub
 
@@ -383,9 +412,12 @@ Partial Public Class ConsoleControl : Inherits UserControl
         Invoke(Sub()
                    '  Are we echoing?
                    If echo Then
+                       richTextBoxConsole.SelectionStart = richTextBoxConsole.TextLength
+                       richTextBoxConsole.SelectionLength = 0
                        richTextBoxConsole.SelectionColor = color
-                       richTextBoxConsole.SelectedText &= input
-                       inputStart = richTextBoxConsole.SelectionStart
+                       richTextBoxConsole.AppendText(input)
+                       inputStart = richTextBoxConsole.TextLength
+                       richTextBoxConsole.ScrollToCaret()
                    End If
 
                    lastInput = input
