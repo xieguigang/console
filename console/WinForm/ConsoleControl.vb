@@ -36,6 +36,17 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Private lastInput As String
 
     ''' <summary>
+    ''' The list of previously submitted input strings, used for up/down history navigation.
+    ''' </summary>
+    Private inputHistory As New List(Of String)
+
+    ''' <summary>
+    ''' The current index into <see cref="inputHistory"/>. Equals <c>inputHistory.Count</c>
+    ''' to indicate the (empty or in-progress) current input line.
+    ''' </summary>
+    Private historyIndex As Integer = 0
+
+    ''' <summary>
     ''' Occurs when console output is produced.
     ''' </summary>
     Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs)
@@ -198,6 +209,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
 
         '  Initialise the keymappings.
         Call InitialiseKeyMappings()
+
+        '  Suppress the RichTextBox's native right-click context menu so that our
+        '  custom right-click paste behaviour can take over. Native Ctrl+C/Ctrl+V
+        '  shortcuts are preserved.
+        richTextBoxConsole.ContextMenuStrip = New ContextMenuStrip()
     End Sub
 
     Public Sub SetConsoleCore([interface] As AbstractProcessInterface)
@@ -282,6 +298,37 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
     Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs) Handles richTextBoxConsole.KeyDown
+        '  Up/Down history navigation. Only when input is enabled, an input line exists and
+        '  the caret is inside the input zone (so that scrolling in the read-only history
+        '  area is unaffected).
+        If m_isInputEnabled AndAlso inputStart >= 0 AndAlso
+           richTextBoxConsole.SelectionStart >= inputStart AndAlso
+           (e.KeyCode = Keys.Up OrElse e.KeyCode = Keys.Down) Then
+
+            e.SuppressKeyPress = True
+            e.Handled = True
+
+            If e.KeyCode = Keys.Up Then
+                '  Step back through history (most recent first).
+                If historyIndex > 0 Then
+                    historyIndex -= 1
+                    Call ReplaceInputBuffer(inputHistory(historyIndex))
+                End If
+            Else
+                '  Step forward; once past the last entry, clear the input line.
+                If historyIndex < inputHistory.Count Then
+                    historyIndex += 1
+                    If historyIndex < inputHistory.Count Then
+                        Call ReplaceInputBuffer(inputHistory(historyIndex))
+                    Else
+                        Call ReplaceInputBuffer("")
+                    End If
+                End If
+            End If
+
+            Return
+        End If
+
         '  When input is enabled and there is an active input line, emulate a native
         '  console's single caret: for any key that affects input, move the caret back
         '  to the end of the current input line so typing works from anywhere.
@@ -360,9 +407,84 @@ Partial Public Class ConsoleControl : Inherits UserControl
             Dim strlen As Integer = richTextBoxConsole.SelectionStart - inputStart
             Dim input = richTextBoxConsole.Text.Substring(inputStart, strlen)
 
+            '  Record non-empty input into the history so it can be recalled with the
+            '  up/down arrows. Reset the index to the end so the next Up starts from the
+            '  most recently submitted command.
+            If Not String.IsNullOrEmpty(input) Then
+                inputHistory.Add(input)
+                historyIndex = inputHistory.Count
+            End If
+
             '  Write the input (without echoing).
             Call WriteInput(input, Color.White, False)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the MouseUp event of the richTextBoxConsole control.
+    ''' </summary>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="e">The <see cref="MouseEventArgs"/> instance containing the event data.</param>
+    Private Sub richTextBoxConsole_MouseUp(sender As Object, e As MouseEventArgs) Handles richTextBoxConsole.MouseUp
+        '  Right button: if the clipboard holds text, paste it into the input buffer.
+        If e.Button = MouseButtons.Right Then
+            If Clipboard.ContainsText() Then
+                Call InsertIntoInputBuffer(Clipboard.GetText())
+            End If
+        ElseIf e.Button = MouseButtons.Left AndAlso richTextBoxConsole.SelectionLength > 0 Then
+            '  Left button with an active selection: copy the selection to the clipboard
+            '  (console-style "select to copy" behaviour, no Enter/Ctrl+C needed).
+            richTextBoxConsole.Copy()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Inserts the given text into the current input buffer. The text is inserted at the
+    ''' caret when the caret is inside the input zone, otherwise it is appended at the end
+    ''' of the current input line.
+    ''' </summary>
+    ''' <param name="text">The text to insert.</param>
+    Private Sub InsertIntoInputBuffer(text As String)
+        '  No active input line: nothing to insert into.
+        If inputStart < 0 Then
+            Return
+        End If
+
+        '  Move the caret to the end of the input line when it sits in the read-only zone.
+        If richTextBoxConsole.SelectionStart < inputStart Then
+            richTextBoxConsole.SelectionStart = richTextBoxConsole.TextLength
+        End If
+
+        richTextBoxConsole.SelectionLength = 0
+        richTextBoxConsole.SelectionColor = Color.White
+        richTextBoxConsole.SelectedText = text
+
+        '  Place the caret at the end of the inserted text.
+        richTextBoxConsole.SelectionStart = richTextBoxConsole.TextLength
+        richTextBoxConsole.SelectionLength = 0
+        richTextBoxConsole.ScrollToCaret()
+    End Sub
+
+    ''' <summary>
+    ''' Replaces the entire current input line with the supplied text and moves the caret
+    ''' to the end of the line.
+    ''' </summary>
+    ''' <param name="newText">The text to place into the input buffer.</param>
+    Private Sub ReplaceInputBuffer(newText As String)
+        '  No active input line: nothing to replace.
+        If inputStart < 0 Then
+            Return
+        End If
+
+        richTextBoxConsole.SelectionStart = inputStart
+        richTextBoxConsole.SelectionLength = richTextBoxConsole.TextLength - inputStart
+        richTextBoxConsole.SelectionColor = Color.White
+        richTextBoxConsole.SelectedText = newText
+
+        '  Place the caret at the end of the replaced line.
+        richTextBoxConsole.SelectionStart = richTextBoxConsole.TextLength
+        richTextBoxConsole.SelectionLength = 0
+        richTextBoxConsole.ScrollToCaret()
     End Sub
 
     ''' <summary>
