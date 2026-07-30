@@ -21,6 +21,167 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Dim WithEvents m_console As AbstractProcessInterface
 
     ''' <summary>
+    ''' Current position that input starts at.
+    ''' </summary>
+    Private inputStart As Integer = -1
+
+    ''' <summary>
+    ''' The is input enabled flag.
+    ''' </summary>
+    Private m_isInputEnabled As Boolean = True
+
+    ''' <summary>
+    ''' The last input string (used so that we can make sure we don't echo input twice).
+    ''' </summary>
+    Private lastInput As String
+
+    ''' <summary>
+    ''' Occurs when console output is produced.
+    ''' </summary>
+    Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs)
+
+    ''' <summary>
+    ''' Occurs when console input is produced.
+    ''' </summary>
+    Public Event OnConsoleInput(sender As Object, args As ConsoleEventArgs)
+
+    ''' <summary>
+    ''' Gets or sets a value indicating whether to show diagnostics.
+    ''' </summary>
+    ''' <value>
+    '''   <c>true</c> if show diagnostics; otherwise, <c>false</c>.
+    ''' </value>
+    <Category("Console Control"), Description("Show diagnostic information, such as exceptions.")>
+    Public Property ShowDiagnostics As Boolean
+
+    ''' <summary>
+    ''' Gets or sets a value indicating whether this instance is input enabled.
+    ''' </summary>
+    ''' <value>
+    ''' 	<c>true</c> if this instance is input enabled; otherwise, <c>false</c>.
+    ''' </value>
+    <Category("Console Control"), Description("If true, the user can key in input.")>
+    Public Property IsInputEnabled As Boolean
+        Get
+            Return m_isInputEnabled
+        End Get
+        Set(value As Boolean)
+            m_isInputEnabled = value
+
+            If IsProcessRunning Then
+                richTextBoxConsole.ReadOnly = Not value
+            End If
+        End Set
+    End Property
+
+    ''' <summary>
+    ''' Gets or sets a value indicating whether [send keyboard commands to process].
+    ''' </summary>
+    ''' <value>
+    ''' 	<c>true</c> if [send keyboard commands to process]; otherwise, <c>false</c>.
+    ''' </value>
+    <Category("Console Control"), Description("If true, special keyboard commands like Ctrl-C and tab are sent to the process.")>
+    Public Property SendKeyboardCommandsToProcess As Boolean
+
+    ''' <summary>
+    ''' Gets a value indicating whether this instance is process running.
+    ''' </summary>
+    ''' <value>
+    ''' 	<c>true</c> if this instance is process running; otherwise, <c>false</c>.
+    ''' </value>
+    <Browsable(False)>
+    Public ReadOnly Property IsProcessRunning As Boolean
+        Get
+            If TypeOf ProcessInterface Is ProcessInterface Then
+                Return DirectCast(m_console, ProcessInterface).IsProcessRunning
+            End If
+
+            Return False
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Gets the internal rich text box.
+    ''' </summary>
+    <Browsable(False)>
+    Public ReadOnly Property InternalRichTextBox As RichTextBox
+        Get
+            Return richTextBoxConsole
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Gets the process interface.
+    ''' </summary>
+    <Browsable(False)>
+    Public ReadOnly Property ProcessInterface As AbstractProcessInterface
+        Get
+            Return m_console
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Gets the key mappings.
+    ''' </summary>
+    <Browsable(False)>
+    Public ReadOnly Property KeyMappings As New List(Of KeyMapping)
+
+    ''' <summary>
+    ''' Gets or sets the font of the text displayed by the control.
+    ''' </summary>
+    ''' <returns>The <seecref="T:System.Drawing.Font"/> to apply to the text displayed by the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultFont"/> property.</returns>
+    '''   <PermissionSet>
+    '''   <IPermissionclass="System.Security.Permissions.EnvironmentPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermissionclass="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Flags="UnmanagedCode, ControlEvidence"/>
+    '''   <IPermissionclass="System.Diagnostics.PerformanceCounterPermission, System, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   </PermissionSet>
+    Public Overrides Property Font As Font
+        Get
+            '  Return the base class font.
+            Return MyBase.Font
+        End Get
+        Set(value As Font)
+            '  Set the base class font...
+            MyBase.Font = value
+
+            '  ...and the internal control font.
+            richTextBoxConsole.Font = value
+        End Set
+    End Property
+
+    ''' <summary>
+    ''' Gets or sets the background color for the control.
+    ''' </summary>
+    ''' <returns>A <seecref="T:System.Drawing.Color"/> that represents the background color of the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultBackColor"/> property.</returns>
+    '''   <PermissionSet>
+    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   </PermissionSet>
+    Public Overrides Property BackColor As Color
+        Get
+            '  Return the base class background.
+            Return MyBase.BackColor
+        End Get
+        Set(value As Color)
+            '  Set the base class background...
+            MyBase.BackColor = value
+
+            '  ...and the internal control background.
+            richTextBoxConsole.BackColor = value
+        End Set
+    End Property
+
+    Public Overrides Property ForeColor As Color
+        Get
+            Return MyBase.ForeColor
+        End Get
+        Set(value As Color)
+            MyBase.ForeColor = value
+            richTextBoxConsole.ForeColor = value
+        End Set
+    End Property
+
+    ''' <summary>
     ''' Initializes a new instance of the <seecref="ConsoleControl"/> class.
     ''' </summary>
     Public Sub New()
@@ -318,165 +479,4 @@ Partial Public Class ConsoleControl : Inherits UserControl
         '  Get the event.
         RaiseEvent OnConsoleInput(Me, New ConsoleEventArgs(content))
     End Sub
-
-    ''' <summary>
-    ''' Current position that input starts at.
-    ''' </summary>
-    Private inputStart As Integer = -1
-
-    ''' <summary>
-    ''' The is input enabled flag.
-    ''' </summary>
-    Private m_isInputEnabled As Boolean = True
-
-    ''' <summary>
-    ''' The last input string (used so that we can make sure we don't echo input twice).
-    ''' </summary>
-    Private lastInput As String
-
-    ''' <summary>
-    ''' Occurs when console output is produced.
-    ''' </summary>
-    Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs)
-
-    ''' <summary>
-    ''' Occurs when console input is produced.
-    ''' </summary>
-    Public Event OnConsoleInput(sender As Object, args As ConsoleEventArgs)
-
-    ''' <summary>
-    ''' Gets or sets a value indicating whether to show diagnostics.
-    ''' </summary>
-    ''' <value>
-    '''   <c>true</c> if show diagnostics; otherwise, <c>false</c>.
-    ''' </value>
-    <Category("Console Control"), Description("Show diagnostic information, such as exceptions.")>
-    Public Property ShowDiagnostics As Boolean
-
-    ''' <summary>
-    ''' Gets or sets a value indicating whether this instance is input enabled.
-    ''' </summary>
-    ''' <value>
-    ''' 	<c>true</c> if this instance is input enabled; otherwise, <c>false</c>.
-    ''' </value>
-    <Category("Console Control"), Description("If true, the user can key in input.")>
-    Public Property IsInputEnabled As Boolean
-        Get
-            Return m_isInputEnabled
-        End Get
-        Set(value As Boolean)
-            m_isInputEnabled = value
-
-            If IsProcessRunning Then
-                richTextBoxConsole.ReadOnly = Not value
-            End If
-        End Set
-    End Property
-
-    ''' <summary>
-    ''' Gets or sets a value indicating whether [send keyboard commands to process].
-    ''' </summary>
-    ''' <value>
-    ''' 	<c>true</c> if [send keyboard commands to process]; otherwise, <c>false</c>.
-    ''' </value>
-    <Category("Console Control"), Description("If true, special keyboard commands like Ctrl-C and tab are sent to the process.")>
-    Public Property SendKeyboardCommandsToProcess As Boolean
-
-    ''' <summary>
-    ''' Gets a value indicating whether this instance is process running.
-    ''' </summary>
-    ''' <value>
-    ''' 	<c>true</c> if this instance is process running; otherwise, <c>false</c>.
-    ''' </value>
-    <Browsable(False)>
-    Public ReadOnly Property IsProcessRunning As Boolean
-        Get
-            If TypeOf ProcessInterface Is ProcessInterface Then
-                Return DirectCast(m_console, ProcessInterface).IsProcessRunning
-            End If
-
-            Return False
-        End Get
-    End Property
-
-    ''' <summary>
-    ''' Gets the internal rich text box.
-    ''' </summary>
-    <Browsable(False)>
-    Public ReadOnly Property InternalRichTextBox As RichTextBox
-        Get
-            Return richTextBoxConsole
-        End Get
-    End Property
-
-    ''' <summary>
-    ''' Gets the process interface.
-    ''' </summary>
-    <Browsable(False)>
-    Public ReadOnly Property ProcessInterface As AbstractProcessInterface
-        Get
-            Return m_console
-        End Get
-    End Property
-
-    ''' <summary>
-    ''' Gets the key mappings.
-    ''' </summary>
-    <Browsable(False)>
-    Public ReadOnly Property KeyMappings As New List(Of KeyMapping)
-
-    ''' <summary>
-    ''' Gets or sets the font of the text displayed by the control.
-    ''' </summary>
-    ''' <returns>The <seecref="T:System.Drawing.Font"/> to apply to the text displayed by the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultFont"/> property.</returns>
-    '''   <PermissionSet>
-    '''   <IPermissionclass="System.Security.Permissions.EnvironmentPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   <IPermissionclass="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Flags="UnmanagedCode, ControlEvidence"/>
-    '''   <IPermissionclass="System.Diagnostics.PerformanceCounterPermission, System, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   </PermissionSet>
-    Public Overrides Property Font As Font
-        Get
-            '  Return the base class font.
-            Return MyBase.Font
-        End Get
-        Set(value As Font)
-            '  Set the base class font...
-            MyBase.Font = value
-
-            '  ...and the internal control font.
-            richTextBoxConsole.Font = value
-        End Set
-    End Property
-
-    ''' <summary>
-    ''' Gets or sets the background color for the control.
-    ''' </summary>
-    ''' <returns>A <seecref="T:System.Drawing.Color"/> that represents the background color of the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultBackColor"/> property.</returns>
-    '''   <PermissionSet>
-    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   </PermissionSet>
-    Public Overrides Property BackColor As Color
-        Get
-            '  Return the base class background.
-            Return MyBase.BackColor
-        End Get
-        Set(value As Color)
-            '  Set the base class background...
-            MyBase.BackColor = value
-
-            '  ...and the internal control background.
-            richTextBoxConsole.BackColor = value
-        End Set
-    End Property
-
-    Public Overrides Property ForeColor As Color
-        Get
-            Return MyBase.ForeColor
-        End Get
-        Set(value As Color)
-            MyBase.ForeColor = value
-            richTextBoxConsole.ForeColor = value
-        End Set
-    End Property
 End Class

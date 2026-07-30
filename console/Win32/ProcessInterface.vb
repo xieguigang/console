@@ -25,10 +25,16 @@ Namespace Win32
             End Get
         End Property
 
+        Dim WithEvents proc As Process
+
         ''' <summary>
         ''' Gets the internal process.
         ''' </summary>
         Public ReadOnly Property Process As Process
+            Get
+                Return proc
+            End Get
+        End Property
 
         ''' <summary>
         ''' Gets the name of the process.
@@ -73,18 +79,20 @@ Namespace Win32
             processStartInfo.RedirectStandardOutput = True
 
             '  Create the process.
-            _Process = New Process()
-            _Process.EnableRaisingEvents = True
-            _Process.StartInfo = processStartInfo
-            AddHandler Process.Exited, AddressOf currentProcess_Exited
+            proc = New Process() With {
+                .EnableRaisingEvents = True,
+                .StartInfo = processStartInfo
+            }
 
             '  Start the process.
             Try
                 Call Process.Start()
             Catch e As Exception
                 '  Trace the exception.
-                Trace.WriteLine("Failed to start process " & processStartInfo.FileName & " with arguments '" & processStartInfo.Arguments & "'")
+                Call App.LogException(e)
+                Call Trace.WriteLine("Failed to start process " & processStartInfo.FileName & " with arguments '" & processStartInfo.Arguments & "'")
                 Call Trace.WriteLine(e.ToString())
+
                 Return
             End Try
 
@@ -120,7 +128,7 @@ Namespace Win32
         ''' </summary>
         ''' <paramname="sender">The source of the event.</param>
         ''' <paramname="e">The <seecref="System.EventArgs"/> instance containing the event data.</param>
-        Private Sub currentProcess_Exited(sender As Object, e As EventArgs)
+        Private Sub currentProcess_Exited(sender As Object, e As EventArgs) Handles proc.Exited
             Dim exitCode As Integer = Process.ExitCode
 
             '  Disable the threads.
@@ -129,8 +137,8 @@ Namespace Win32
             inputWriter = Nothing
             outputReader = Nothing
             errorReader = Nothing
+            proc = Nothing
 
-            _Process = Nothing
             _ProcessFileName = Nothing
             _ProcessArguments = Nothing
 
@@ -163,8 +171,8 @@ Namespace Win32
 
             Try
                 If Process IsNot Nothing Then
-                    _Process.Dispose()
-                    _Process = Nothing
+                    proc.Dispose()
+                    proc = Nothing
                 End If
             Catch ex As Exception
 
