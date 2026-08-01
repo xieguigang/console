@@ -32,7 +32,9 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
 
     Sub New(options As SshConnectionOptions)
         Call MyBase.New(void:=Nothing)
+
         Me.Options = If(options, New SshConnectionOptions())
+        Me.ansi = True
     End Sub
 
     Public Overrides ReadOnly Property IsProcessRunning As Boolean
