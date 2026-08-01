@@ -550,6 +550,28 @@ Partial Public Class ConsoleControl : Inherits UserControl
     End Sub
 
     ''' <summary>
+    ''' Starts the underlying session/process using the parameterless contract.
+    ''' This is used by back-ends (such as an SSH shell) whose connection
+    ''' parameters are configured out-of-band (e.g. via dedicated properties or
+    ''' a Connect() call). It does not change the behaviour of the existing
+    ''' file-name based overloads used by the local console.
+    ''' </summary>
+    Public Sub StartProcess()
+        '  Are we showing diagnostics?
+        If ShowDiagnostics Then
+            WriteOutput("Starting session..." & Environment.NewLine, Color.FromArgb(255, 0, 255, 0))
+        End If
+
+        '  Start the back-end (no arguments needed).
+        m_console.StartProcess()
+
+        '  If we enable input, make the control not read only.
+        If IsInputEnabled Then
+            richTextBoxConsole.ReadOnly = False
+        End If
+    End Sub
+
+    ''' <summary>
     ''' Runs a process.
     ''' </summary>
     ''' <paramname="fileName">Name of the file.</param>
@@ -608,10 +630,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Stops the process.
     ''' </summary>
     Public Sub StopProcess()
-        If TypeOf ProcessInterface Is ProcessInterface Then
-            '  Stop the interface.
-            Call DirectCast(m_console, ProcessInterface).StopProcess()
-        End If
+        '  Stop the back-end via the (possibly overridden) contract.
+        Call m_console.StopProcess()
     End Sub
 
     ''' <summary>
