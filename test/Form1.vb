@@ -11,7 +11,7 @@ Public Class Form1
         '        console.ForegroundColor = ConsoleColor.White
         '        console.SetConsoleBackColor(Color.DodgerBlue)
 
-        Call ConsoleControl1.WriteAnsiEscape(New TextSpan("Hello", AnsiColor.Red) & AnsiEscapeCodes.Reset & " " & New TextSpan("World!", AnsiColor.Blue) & AnsiEscapeCodes.Reset)
+        Call ConsoleControl1.WriteAnsiEscape(New TextSpan("Hello", AnsiColor.Red) & AnsiEscapeCodes.Reset & " " & New TextSpan("World!", AnsiColor.Blue) & AnsiEscapeCodes.Reset & vbCrLf & vbCrLf)
 
         '        Call DemoInterpreter.Start(console)
         Call ConsoleControl1.StartProcess("cmd", Nothing)
