@@ -103,6 +103,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
     <Browsable(False)>
     Public ReadOnly Property IsProcessRunning As Boolean
         Get
+            If m_console Is Nothing Then
+                Return False
+            End If
+
             '  Delegate to the (possibly overridden) back-end property so that any
             '  AbstractProcessInterface implementation (local process, SSH, ...) works.
             Return m_console.IsProcessRunning
