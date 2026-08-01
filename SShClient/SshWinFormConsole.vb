@@ -8,16 +8,11 @@ Imports Microsoft.VisualBasic.Windows.Forms.Win32
 ''' in as the back-end, so all ANSI rendering, line editing and input handling is
 ''' inherited unchanged.
 ''' </summary>
-Public Class SshWinFormConsole : Inherits ConsoleControl
+Public Class SshWinFormConsole : Inherits UserControl
 
     Private sshInterface As SshProcessInterface = Nothing
+    Friend WithEvents ConsoleControl1 As ConsoleControl
     Private m_autoConnectOnFocus As Boolean = False
-
-    Public Sub New()
-        Call MyBase.New()
-        '  Re-run the base designer initialization (now visible to subclasses).
-        Call MyBase.InitializeComponent()
-    End Sub
 
     ''' <summary>
     ''' Gets or sets the connection options. Assign the host/user/password (or a
@@ -84,6 +79,42 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
         End Set
     End Property
 
+    Public Property IsInputEnabled As Boolean
+        Get
+            Return ConsoleControl1.IsInputEnabled
+        End Get
+        Set(value As Boolean)
+            ConsoleControl1.IsInputEnabled = value
+        End Set
+    End Property
+
+    Public Property [ReadOnly] As Boolean
+        Get
+            Return ConsoleControl1.ReadOnly
+        End Get
+        Set(value As Boolean)
+            ConsoleControl1.ReadOnly = value
+        End Set
+    End Property
+
+    Public Property SendKeyboardCommandsToProcess As Boolean
+        Get
+            Return ConsoleControl1.SendKeyboardCommandsToProcess
+        End Get
+        Set(value As Boolean)
+            ConsoleControl1.SendKeyboardCommandsToProcess = value
+        End Set
+    End Property
+
+    Public Property ShowDiagnostics As Boolean
+        Get
+            Return ConsoleControl1.ShowDiagnostics
+        End Get
+        Set(value As Boolean)
+            ConsoleControl1.ShowDiagnostics = value
+        End Set
+    End Property
+
     ''' <summary>Connects using the currently configured <see cref="ConnectionOptions"/>.</summary>
     Public Sub Connect()
         Connect(ConnectionOptions)
@@ -92,11 +123,11 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
     ''' <summary>Connects using the supplied options, then starts the session.</summary>
     Public Sub Connect(options As SshConnectionOptions)
         If options Is Nothing OrElse Not options.IsValid() Then
-            WriteOutput("SSH connection options are incomplete (host and user name required)." & Environment.NewLine, Color.Red)
+            ConsoleControl1.WriteOutput("SSH connection options are incomplete (host and user name required)." & Environment.NewLine, Color.Red)
             Return
         End If
 
-        If IsProcessRunning Then
+        If ConsoleControl1.IsProcessRunning Then
             Disconnect()
         End If
 
@@ -110,13 +141,13 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
         AddHandler sshInterface.OnProcessExit, AddressOf OnSshExit
 
         '  Assign the back-end and start the session through the inherited API.
-        m_console = sshInterface
-        Call MyBase.StartProcess()
+        ConsoleControl1.SetConsoleCore(sshInterface)
+        ConsoleControl1.StartProcess()
     End Sub
 
     ''' <summary>Disconnects the active SSH session.</summary>
     Public Sub Disconnect()
-        Call MyBase.StopProcess()
+        Call ConsoleControl1.StopProcess()
 
         If sshInterface IsNot Nothing Then
             RemoveHandler sshInterface.OnProcessError, AddressOf OnSshError
@@ -124,8 +155,6 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
             sshInterface.Dispose()
             sshInterface = Nothing
         End If
-
-        m_console = Nothing
     End Sub
 
     ''' <summary>
@@ -170,7 +199,7 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
     Protected Overrides Sub OnGotFocus(e As EventArgs)
         MyBase.OnGotFocus(e)
 
-        If m_autoConnectOnFocus AndAlso Not IsProcessRunning AndAlso ConnectionOptions.IsValid() Then
+        If m_autoConnectOnFocus AndAlso Not ConsoleControl1.IsProcessRunning AndAlso ConnectionOptions.IsValid() Then
             Connect()
         End If
     End Sub
@@ -178,17 +207,47 @@ Public Class SshWinFormConsole : Inherits ConsoleControl
     Protected Overrides Sub OnResize(e As EventArgs)
         MyBase.OnResize(e)
 
-        If sshInterface IsNot Nothing AndAlso IsProcessRunning Then
+        If sshInterface IsNot Nothing AndAlso ConsoleControl1.IsProcessRunning Then
             EstimateAndApplyTerminalSize(sshInterface)
             sshInterface.ResizeTerminal(sshInterface.Columns, sshInterface.Rows)
         End If
     End Sub
 
     Private Sub OnSshError(sender As Object, e As ProcessEventArgs)
-        WriteOutput(e.Content, Color.Red)
+        ConsoleControl1.WriteOutput(e.Content, Color.Red)
+    End Sub
+
+    Sub New()
+        Call InitializeComponent()
+    End Sub
+
+    Private Sub InitializeComponent()
+        ConsoleControl1 = New ConsoleControl()
+        SuspendLayout()
+        ' 
+        ' ConsoleControl1
+        ' 
+        ConsoleControl1.Dock = DockStyle.Fill
+        ConsoleControl1.IsInputEnabled = True
+        ConsoleControl1.Location = New Point(0, 0)
+        ConsoleControl1.Margin = New Padding(4, 4, 4, 4)
+        ConsoleControl1.Name = "ConsoleControl1"
+        ConsoleControl1.ReadOnly = True
+        ConsoleControl1.SendKeyboardCommandsToProcess = False
+        ConsoleControl1.ShowDiagnostics = False
+        ConsoleControl1.Size = New Size(852, 663)
+        ConsoleControl1.TabIndex = 0
+        ' 
+        ' SshWinFormConsole
+        ' 
+        Controls.Add(ConsoleControl1)
+        Name = "SshWinFormConsole"
+        Size = New Size(852, 663)
+        ResumeLayout(False)
+
     End Sub
 
     Private Sub OnSshExit(sender As Object, e As ProcessEventArgs)
-        WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
+        ConsoleControl1.WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
     End Sub
 End Class
