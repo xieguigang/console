@@ -2,9 +2,7 @@
 Imports Microsoft.VisualBasic.Windows.Forms
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
-Namespace SShClient
-
-    ''' <summary>
+''' <summary>
     ''' A ready-to-use WinForms console control that opens an interactive SSH shell.
     ''' It derives from <c>ConsoleControl</c> and plugs an <see cref="SshProcessInterface"/>
     ''' in as the back-end, so all ANSI rendering, line editing and input handling is
@@ -194,4 +192,3 @@ Namespace SShClient
             WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
         End Sub
     End Class
-End Namespace

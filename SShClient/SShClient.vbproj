@@ -3,11 +3,9 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <StartupObject>SShClient.Program</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
     <UseWPF>True</UseWPF>
-    <GenerateProgramFile>false</GenerateProgramFile>
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
   </PropertyGroup>
 

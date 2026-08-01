@@ -1,12 +1,10 @@
 Imports System.Windows.Forms
 
-Namespace SShClient
-
-    ''' <summary>
-    ''' A minimal demo host for <see cref="SshWinFormConsole"/>: a small connection
-    ''' bar (host / user / password / port and a Connect button) plus the console.
-    ''' </summary>
-    Public Class MainForm : Inherits Form
+''' <summary>
+''' A minimal demo host for <see cref="SshWinFormConsole"/>: a small connection
+''' bar (host / user / password / port and a Connect button) plus the console.
+''' </summary>
+Public Class MainForm : Inherits Form
 
         Public Sub New()
             Call InitializeComponent()
@@ -33,4 +31,3 @@ Namespace SShClient
             SshConsole.Disconnect()
         End Sub
     End Class
-End Namespace

@@ -1,8 +1,6 @@
 Imports System.Windows.Forms
 
-Namespace SShClient
-
-    Partial Class MainForm
+Partial Class MainForm
 
         Private components As System.ComponentModel.IContainer = Nothing
 
@@ -113,4 +111,3 @@ Namespace SShClient
             Me.PerformLayout()
         End Sub
     End Class
-End Namespace

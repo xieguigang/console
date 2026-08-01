@@ -5,15 +5,13 @@ Imports Renci.SshNet.Common
 Imports SSH = Renci.SshNet
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
-Namespace SShClient
-
-    ''' <summary>
-    ''' An <see cref="AbstractProcessInterface"/> implementation that drives a remote
-    ''' shell over SSH using the SSH.NET library. The remote shell is attached to a
-    ''' <see cref="SSH.ShellStream"/>, so the hosting console control reuses its
-    ''' existing ANSI rendering and input pipeline unchanged.
-    ''' </summary>
-    Public Class SshProcessInterface : Inherits AbstractProcessInterface
+''' <summary>
+''' An <see cref="AbstractProcessInterface"/> implementation that drives a remote
+''' shell over SSH using the SSH.NET library. The remote shell is attached to a
+''' <see cref="SSH.ShellStream"/>, so the hosting console control reuses its
+''' existing ANSI rendering and input pipeline unchanged.
+''' </summary>
+Public Class SshProcessInterface : Inherits AbstractProcessInterface
 
         Private client As SSH.SshClient = Nothing
         Private shell As SSH.ShellStream = Nothing
@@ -92,7 +90,7 @@ Namespace SShClient
                 '  Host-key verification. By default we do NOT trust unknown keys; the
                 '  AcceptAnyHostKey flag (testing only) trusts everything.
                 AddHandler client.HostKeyReceived,
-                    Sub(sender As Object, e As SSH.HostKeyEventArgs)
+                    Sub(sender As Object, e As HostKeyEventArgs)
                         If Options.AcceptAnyHostKey Then
                             e.CanTrust = True
                         ElseIf Not e.CanTrust Then
@@ -178,22 +176,13 @@ Namespace SShClient
         End Sub
 
         ''' <summary>
-        ''' Updates the remote terminal size. Called by the hosting control when the
-        ''' on-screen console is resized.
+        ''' Records the requested terminal size. The SSH.NET 2025.1.0 ShellStream no
+        ''' longer exposes a runtime resize API, so the reported size is applied on the
+        ''' next connection. (The initial size is set in <see cref="StartProcess"/>.)
         ''' </summary>
         Public Sub ResizeTerminal(columns As UInteger, rows As UInteger)
             Columns = columns
             Rows = rows
-
-            If shell IsNot Nothing Then
-                SyncLock sync
-                    Try
-                        shell.ResizeTerminal(CInt(rows), CInt(columns), 0, 0)
-                    Catch
-                        '  Resize is best-effort; ignore failures.
-                    End Try
-                End SyncLock
-            End If
         End Sub
 
         Public Overrides Sub StopProcess()
@@ -235,4 +224,3 @@ Namespace SShClient
             MyBase.Dispose(disposing)
         End Sub
     End Class
-End Namespace

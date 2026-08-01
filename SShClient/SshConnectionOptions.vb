@@ -1,8 +1,6 @@
 Imports System.ComponentModel
 
-Namespace SShClient
-
-    ''' <summary>
+''' <summary>
     ''' Connection parameters for an SSH session. Intended to be populated either
     ''' from a WinForms designer (exposed as properties on <see cref="SshWinFormConsole"/>)
     ''' or programmatically.
@@ -71,4 +69,3 @@ Namespace SShClient
             Return Not String.IsNullOrWhiteSpace(Host) AndAlso Not String.IsNullOrWhiteSpace(UserName)
         End Function
     End Class
-End Namespace
