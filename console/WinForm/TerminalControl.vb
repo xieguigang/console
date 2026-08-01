@@ -48,9 +48,13 @@ Namespace Console
         Private Const Esc As Char = ChrW(27)
 
         Public Sub New()
+            ' 20260802 parent sub new may call codes to initialize the grid font and buffer object
             MyBase.New()
-            _gridFont = New Font("Consolas", 9, FontStyle.Regular)
-            _buffer = New TerminalBuffer(_rows, _cols)
+
+            ' try to avoid of re-create the font and buffer object when the parent sub new is called
+            ' to avoid lost the initlaized status
+            If _gridFont Is Nothing Then _gridFont = New Font("Consolas", 9, FontStyle.Regular)
+            If _buffer Is Nothing Then _buffer = New TerminalBuffer(_rows, _cols)
         End Sub
 
         ' ====================================================================
@@ -67,6 +71,9 @@ Namespace Console
 
             If rtb.Font IsNot Nothing Then
                 _gridFont = New Font(rtb.Font.FontFamily, rtb.Font.Size, FontStyle.Regular)
+            End If
+            If _buffer Is Nothing Then
+                _buffer = New TerminalBuffer(_rows, _cols)
             End If
 
             '  Measure a single monospace cell.
@@ -130,7 +137,8 @@ Namespace Console
 
             _ansiBuffer.Clear()
             _buffer.ProcessAnsi(text)
-            Call RenderToRichTextBox()
+
+            Call Me.Invoke(Sub() RenderToRichTextBox())
         End Sub
 
         ''' <summary>

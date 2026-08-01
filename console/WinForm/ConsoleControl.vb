@@ -437,7 +437,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
         If e.KeyCode = Keys.Return AndAlso Not isInReadOnlyZone Then
             '  Get the input.
             Dim strlen As Integer = richTextBoxConsole.SelectionStart - inputStart
-            Dim input = richTextBoxConsole.Text.Substring(inputStart, strlen)
+            Dim input As String = ""
+
+            If inputStart > 0 Then
+                input = richTextBoxConsole.Text.Substring(inputStart, strlen)
+            End If
 
             '  Record non-empty input into the history so it can be recalled with the
             '  up/down arrows. Reset the index to the end so the next Up starts from the
