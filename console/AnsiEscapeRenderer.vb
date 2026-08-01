@@ -48,19 +48,13 @@ Public Class AnsiEscapeRenderer
         If rtb Is Nothing OrElse ansiText Is Nothing Then Return
         If state Is Nothing Then state = New AnsiTerminalState()
 
-        ' 暂停绘制以提升性能（调用方已确保在 UI 线程）
-        SendMessage(rtb.Handle, WM_SETREDRAW, False, 0)
-        Try
-            ParseAndApply(rtb, ansiText, state)
-        Finally
-            SendMessage(rtb.Handle, WM_SETREDRAW, True, 0)
-            rtb.Invalidate()
-            ' 强制同步重绘，确保挂起绘制期间设置的颜色/字体样式立即刷新显示
-            rtb.Update()
-            ' 保持光标在文末，避免后续追加错位
-            rtb.SelectionStart = rtb.TextLength
-            rtb.SelectionLength = 0
-        End Try
+        ' 注意：此处不挂起绘制（WM_SETREDRAW）。RichTextBox 在绘制挂起期间设置的
+        ' SelectionColor/SelectionFont 等字符格式可能无法持久化，导致样式静默丢失。
+        ParseAndApply(rtb, ansiText, state)
+
+        ' 保持光标在文末，避免后续追加错位
+        rtb.SelectionStart = rtb.TextLength
+        rtb.SelectionLength = 0
     End Sub
 
     ''' <summary>
@@ -95,7 +89,8 @@ Public Class AnsiEscapeRenderer
                         ' 序列未结束（理论上不应发生，因为 ConsoleControl 已做缓冲拼接）
                         Exit While
                     End If
-                    Dim body As String = text.Substring(pos + 2, seqEnd - (pos + 2))
+                    ' body 需包含终止符（如 'm'），HandleCsi 以 body 末字符判定序列类型
+                    Dim body As String = text.Substring(pos + 2, seqEnd - (pos + 2) + 1)
                     HandleCsi(rtb, body, state)
                     pos = seqEnd + 1
                     Continue While
@@ -425,12 +420,6 @@ Public Class AnsiEscapeRenderer
         Return v
     End Function
 
-    ' Windows API 声明（挂起/恢复绘制）
-    Private Const WM_SETREDRAW As Integer = &HB
-
-    <System.Runtime.InteropServices.DllImport("user32.dll")>
-    Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As Boolean, lParam As Integer) As Integer
-    End Function
 End Class
 
 ' 文本段数据结构（保留以供外部兼容）
