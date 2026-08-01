@@ -1,5 +1,6 @@
 ﻿Imports System.ComponentModel
-Imports Microsoft.VisualBasic.Windows.Forms.WinForm
+Imports Microsoft.VisualBasic.Windows.Forms
+Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
 Namespace SShClient
 
@@ -12,17 +13,12 @@ Namespace SShClient
     Public Class SshWinFormConsole : Inherits ConsoleControl
 
         Private sshInterface As SshProcessInterface = Nothing
-        Private autoConnectOnFocus As Boolean = False
+        Private m_autoConnectOnFocus As Boolean = False
 
         Public Sub New()
             Call MyBase.New()
             '  Re-run the base designer initialization (now visible to subclasses).
             Call MyBase.InitializeComponent()
-
-            '  Hook the back-end output/error events.
-            AddHandler MyBase.ProcessInterface.OnProcessOutput, AddressOf OnSshOutput
-            AddHandler MyBase.ProcessInterface.OnProcessError, AddressOf OnSshError
-            AddHandler MyBase.ProcessInterface.OnProcessExit, AddressOf OnSshExit
         End Sub
 
         ''' <summary>
@@ -39,10 +35,10 @@ Namespace SShClient
         <Browsable(True), Category("SSH"), DefaultValue(False)>
         Public Property AutoConnectOnFocus As Boolean
             Get
-                Return autoConnectOnFocus
+                Return m_autoConnectOnFocus
             End Get
             Set(value As Boolean)
-                autoConnectOnFocus = value
+                m_autoConnectOnFocus = value
             End Set
         End Property
 
@@ -63,8 +59,8 @@ Namespace SShClient
             Get
                 Return ConnectionOptions.Port
             End Get
-            Set(value As String)
-                ConnectionOptions.Port = CInt(value)
+            Set(value As Integer)
+                ConnectionOptions.Port = value
             End Set
         End Property
 
@@ -110,13 +106,13 @@ Namespace SShClient
             sshInterface = New SshProcessInterface(options)
             EstimateAndApplyTerminalSize(sshInterface)
 
-            '  Listen to output/error from the SSH back-end.
-            AddHandler sshInterface.OnProcessOutput, AddressOf OnSshOutput
+            '  The base ConsoleControl already renders OnProcessOutput; we only need
+            '  to surface errors / session end in addition.
             AddHandler sshInterface.OnProcessError, AddressOf OnSshError
             AddHandler sshInterface.OnProcessExit, AddressOf OnSshExit
 
             '  Assign the back-end and start the session through the inherited API.
-            ProcessInterface = sshInterface
+            m_console = sshInterface
             Call MyBase.StartProcess()
         End Sub
 
@@ -125,14 +121,13 @@ Namespace SShClient
             Call MyBase.StopProcess()
 
             If sshInterface IsNot Nothing Then
-                RemoveHandler sshInterface.OnProcessOutput, AddressOf OnSshOutput
                 RemoveHandler sshInterface.OnProcessError, AddressOf OnSshError
                 RemoveHandler sshInterface.OnProcessExit, AddressOf OnSshExit
                 sshInterface.Dispose()
                 sshInterface = Nothing
             End If
 
-            ProcessInterface = Nothing
+            m_console = Nothing
         End Sub
 
         ''' <summary>
@@ -159,7 +154,7 @@ Namespace SShClient
         ''' <summary>Resolves the monospace font used by the embedded console.</summary>
         Private Function GetConsoleFont() As Font
             '  The base ConsoleControl initializes its RichTextBox with Consolas 9.75pt.
-            '  Prefer the RichTextBox font if it is accessible through the renderer.
+            '  Reach it through reflection so we do not depend on its (private) field.
             Try
                 Dim rtb = GetType(ConsoleControl) _
                     .GetField("richTextBoxConsole", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance) _
@@ -177,7 +172,7 @@ Namespace SShClient
         Protected Overrides Sub OnGotFocus(e As EventArgs)
             MyBase.OnGotFocus(e)
 
-            If autoConnectOnFocus AndAlso Not IsProcessRunning AndAlso ConnectionOptions.IsValid() Then
+            If m_autoConnectOnFocus AndAlso Not IsProcessRunning AndAlso ConnectionOptions.IsValid() Then
                 Connect()
             End If
         End Sub
@@ -189,11 +184,6 @@ Namespace SShClient
                 EstimateAndApplyTerminalSize(sshInterface)
                 sshInterface.ResizeTerminal(sshInterface.Columns, sshInterface.Rows)
             End If
-        End Sub
-
-        Private Sub OnSshOutput(sender As Object, e As ProcessEventArgs)
-            '  Output is rendered by the base ConsoleControl via its own handler; this
-            '  handler is kept for diagnostics/logging if needed.
         End Sub
 
         Private Sub OnSshError(sender As Object, e As ProcessEventArgs)

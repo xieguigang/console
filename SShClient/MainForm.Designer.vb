@@ -14,8 +14,8 @@ Namespace SShClient
         Private PasswordTextBox As TextBox
         Private PortLabel As Label
         Private PortTextBox As TextBox
-        Private ConnectButton As Button
-        Private DisconnectButton As Button
+        Private WithEvents ConnectButton As Button
+        Private WithEvents DisconnectButton As Button
         Private ToolStrip As Panel
         Private SshConsole As SshWinFormConsole
 

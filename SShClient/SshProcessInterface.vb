@@ -1,8 +1,8 @@
 Imports System.IO
 Imports System.Text
 Imports System.Threading
-Imports Renci.SshNet
 Imports Renci.SshNet.Common
+Imports SSH = Renci.SshNet
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 
 Namespace SShClient
@@ -10,13 +10,13 @@ Namespace SShClient
     ''' <summary>
     ''' An <see cref="AbstractProcessInterface"/> implementation that drives a remote
     ''' shell over SSH using the SSH.NET library. The remote shell is attached to a
-    ''' bidirectional <see cref="PipeStream"/> via <see cref="SshClient.CreateShell"/>,
-    ''' so the hosting <c>ConsoleControl</c> reuses its existing ANSI rendering and
-    ''' input pipeline unchanged.
+    ''' bidirectional <see cref="PipeStream"/> via <see cref="SSH.SshClient.CreateShell"/>,
+    ''' so the hosting console control reuses its existing ANSI rendering and input
+    ''' pipeline unchanged.
     ''' </summary>
     Public Class SshProcessInterface : Inherits AbstractProcessInterface
 
-        Private client As SshClient = Nothing
+        Private client As SSH.SshClient = Nothing
         Private pipe As PipeStream = Nothing
         Private readThread As Thread = Nothing
         Private runRead As Boolean = False
@@ -46,38 +46,38 @@ Namespace SShClient
         End Property
 
         ''' <summary>
-        ''' Builds a <see cref="ConnectionInfo"/> from the configured options.
+        ''' Builds a <see cref="SSH.ConnectionInfo"/> from the configured options.
         ''' Supports password authentication, private-key authentication and an
         ''' optional HTTP/SOCKS proxy, mirroring the reference implementation.
         ''' </summary>
-        Private Function BuildConnectionInfo() As ConnectionInfo
+        Private Function BuildConnectionInfo() As SSH.ConnectionInfo
             Dim o = Options
-            Dim auths As New List(Of AuthenticationMethod)
+            Dim auths As New List(Of SSH.AuthenticationMethod)
 
             If Not String.IsNullOrWhiteSpace(o.PrivateKeyFile) Then
                 If String.IsNullOrWhiteSpace(o.Passphrase) Then
-                    auths.Add(New PrivateKeyAuthenticationMethod(o.UserName, New PrivateKeyFile(o.PrivateKeyFile)))
+                    auths.Add(New SSH.PrivateKeyAuthenticationMethod(o.UserName, New SSH.PrivateKeyFile(o.PrivateKeyFile)))
                 Else
-                    auths.Add(New PrivateKeyAuthenticationMethod(o.UserName, New PrivateKeyFile(o.PrivateKeyFile, o.Passphrase)))
+                    auths.Add(New SSH.PrivateKeyAuthenticationMethod(o.UserName, New SSH.PrivateKeyFile(o.PrivateKeyFile, o.Passphrase)))
                 End If
             Else
-                auths.Add(New PasswordAuthenticationMethod(o.UserName, o.Password))
+                auths.Add(New SSH.PasswordAuthenticationMethod(o.UserName, o.Password))
             End If
 
-            Dim info As ConnectionInfo
+            Dim info As SSH.ConnectionInfo
 
             If Not String.IsNullOrWhiteSpace(o.ProxyHost) AndAlso o.ProxyPort > 0 Then
-                Dim proxyType = ProxyTypes.Http
-                Dim proxy = New ProxyInfo(proxyType, o.ProxyHost, o.ProxyPort, o.ProxyUserName, o.ProxyPassword)
-                info = New ConnectionInfo(o.Host, o.Port, o.UserName, proxy, auths.ToArray())
+                Dim proxyType = SSH.ProxyTypes.Http
+                Dim proxy = New SSH.ProxyInfo(proxyType, o.ProxyHost, o.ProxyPort, o.ProxyUserName, o.ProxyPassword)
+                info = New SSH.ConnectionInfo(o.Host, o.Port, o.UserName, proxy, auths.ToArray())
             Else
-                info = New ConnectionInfo(o.Host, o.Port, o.UserName, auths.ToArray())
+                info = New SSH.ConnectionInfo(o.Host, o.Port, o.UserName, auths.ToArray())
             End If
 
             If o.AcceptAnyHostKey Then
                 '  Insecure: trust any host key (testing only).
                 AddHandler info.HostKeyReceived,
-                    Sub(sender As Object, e As HostKeyEventArgs)
+                    Sub(sender As Object, e As SSH.HostKeyEventArgs)
                         e.CanTrust = True
                     End Sub
             End If
@@ -97,13 +97,13 @@ Namespace SShClient
 
             SyncLock sync
                 Dim info = BuildConnectionInfo()
-                client = New SshClient(info)
+                client = New SSH.SshClient(info)
                 client.KeepAliveInterval = TimeSpan.FromSeconds(30)
 
                 If Not Options.AcceptAnyHostKey Then
-                    '  Report unknown host keys as errors instead of silently trusting them.
+                    '  Report untrusted host keys as errors instead of silently trusting them.
                     AddHandler client.HostKeyReceived,
-                        Sub(sender As Object, e As HostKeyEventArgs)
+                        Sub(sender As Object, e As SSH.HostKeyEventArgs)
                             If Not e.CanTrust Then
                                 RaiseEvent OnProcessError(Me, New ProcessEventArgs("Host key received but not trusted: " & e.FingerPrint & Environment.NewLine))
                             End If
@@ -145,7 +145,7 @@ Namespace SShClient
                 End Try
 
                 If read <= 0 Then
-                    If Not client.IsConnected Then
+                    If client Is Nothing OrElse Not client.IsConnected Then
                         Exit While
                     End If
 
@@ -170,7 +170,7 @@ Namespace SShClient
         End Sub
 
         Public Overrides Sub WriteInput(input As String)
-            If pipe Is Nothing OrElse Not client.IsConnected Then
+            If pipe Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
                 Return
             End If
 

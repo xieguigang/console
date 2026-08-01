@@ -8,6 +8,7 @@
     <MyType>WindowsForms</MyType>
     <UseWPF>True</UseWPF>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
