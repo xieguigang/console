@@ -7,11 +7,12 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>True</UseWindowsForms>
     <UseWPF>True</UseWPF>
-    <StartupObject>test.Form1</StartupObject>
+    <StartupObject>test.Form2</StartupObject>
 </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\GCModeller\src\runtime\sciBASIC#\Microsoft.VisualBasic.Core\src\Core.vbproj" />
     <ProjectReference Include="..\console\console.NET5.vbproj" />
+    <ProjectReference Include="..\SShClient\SShClient.vbproj" />
   </ItemGroup>
 </Project>

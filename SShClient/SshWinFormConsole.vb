@@ -255,4 +255,8 @@ Public Class SshWinFormConsole : Inherits UserControl
     Private Sub OnSshExit(sender As Object, e As ProcessEventArgs)
         ConsoleControl1.WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
     End Sub
+
+    Private Sub SshWinFormConsole_Load(sender As Object, e As EventArgs) Handles Me.Load
+        Call ConsoleControl1.WriteOutput(" $ ", Color.White)
+    End Sub
 End Class
