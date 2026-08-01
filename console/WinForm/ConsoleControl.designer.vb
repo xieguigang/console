@@ -23,7 +23,7 @@ Partial Class ConsoleControl
     ''' Required method for Designer support - do not modify 
     ''' the contents of this method with the code editor.
     ''' </summary>
-    Private Sub InitializeComponent()
+    Protected Sub InitializeComponent()
         Me.richTextBoxConsole = New System.Windows.Forms.RichTextBox()
         Me.SuspendLayout()
         '

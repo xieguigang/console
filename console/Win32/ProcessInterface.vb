@@ -68,7 +68,7 @@ Namespace Win32
         ''' </summary>
         ''' <paramname="fileName">Name of the file.</param>
         ''' <paramname="arguments">The arguments.</param>
-        Public Sub StartProcess(fileName As String, arguments As String)
+        Public Overloads Sub StartProcess(fileName As String, arguments As String)
             '  Create the process start info.
             StartProcess(New ProcessStartInfo(fileName, arguments))
         End Sub
@@ -77,7 +77,7 @@ Namespace Win32
         ''' Runs a process.
         ''' </summary>
         ''' <paramname="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
-        Public Sub StartProcess(processStartInfo As ProcessStartInfo)
+        Public Overloads Sub StartProcess(processStartInfo As ProcessStartInfo)
             '  Set the options.
             processStartInfo.UseShellExecute = False
             processStartInfo.ErrorDialog = False
