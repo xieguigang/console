@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports Microsoft.VisualBasic.Windows.Forms
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
+Imports std = System.Math
 
 ''' <summary>
 ''' A ready-to-use WinForms console control that opens an interactive SSH shell.
@@ -13,7 +14,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     Private sshInterface As SshProcessInterface = Nothing
     '  Use TerminalControl (grid-based renderer) so htop/btop clear-screen
     '  repaints and Ctrl+C interrupt signalling work correctly.
-    Friend WithEvents ConsoleControl1 As Console.TerminalControl
+    Friend WithEvents ConsoleControl1 As ConsoleControl
     Private m_autoConnectOnFocus As Boolean = False
 
     ''' <summary>
@@ -174,8 +175,8 @@ Public Class SshWinFormConsole : Inherits UserControl
         Using g = Me.CreateGraphics()
             Dim charSize = g.MeasureString("M", font)
             If charSize.Width > 0 AndAlso charSize.Height > 0 Then
-                backend.Columns = CUInt(Math.Max(1, CInt(Me.ClientSize.Width \ charSize.Width)))
-                backend.Rows = CUInt(Math.Max(1, CInt(Me.ClientSize.Height \ charSize.Height)))
+                backend.Columns = CUInt(std.Max(1, CInt(Me.ClientSize.Width \ charSize.Width)))
+                backend.Rows = CUInt(std.Max(1, CInt(Me.ClientSize.Height \ charSize.Height)))
             End If
         End Using
     End Sub
@@ -224,7 +225,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     Private Sub InitializeComponent()
-        ConsoleControl1 = New Console.TerminalControl()
+        ConsoleControl1 = New ConsoleControl()
         SuspendLayout()
         ' 
         ' ConsoleControl1

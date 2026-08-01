@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
     <UseWPF>True</UseWPF>
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
     <Platforms>AnyCPU;x64</Platforms>
+    <RootNamespace>Microsoft.VisualBasic.Windows.Forms.SshClient</RootNamespace>
+    <AssemblyName>Microsoft.VisualBasic.Windows.Forms.SshClient</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
