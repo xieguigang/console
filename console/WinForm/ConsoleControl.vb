@@ -260,8 +260,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessOutput
-        '  若输出包含 ANSI escape 序列，则走 ANSI 渲染路径；否则按纯文本输出（白字）。
-        If args.Ansi Then
+        '  若后端声明 ANSI（True），或文本实际含有 ESC 转义字符，则走 ANSI 渲染路径；
+        '  否则按纯文本输出（白字）。降级判断可兼容未声明 ANSI 却输出了转义码的后端。
+        If args.Ansi OrElse args.Content IsNot Nothing AndAlso args.Content.IndexOf(ChrW(&H1B)) >= 0 Then
             WriteAnsiEscape(args.Content)
         Else
             WriteOutput(args.Content, Color.White)

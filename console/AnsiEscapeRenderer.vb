@@ -55,6 +55,8 @@ Public Class AnsiEscapeRenderer
         Finally
             SendMessage(rtb.Handle, WM_SETREDRAW, True, 0)
             rtb.Invalidate()
+            ' 强制同步重绘，确保挂起绘制期间设置的颜色/字体样式立即刷新显示
+            rtb.Update()
             ' 保持光标在文末，避免后续追加错位
             rtb.SelectionStart = rtb.TextLength
             rtb.SelectionLength = 0
@@ -316,27 +318,30 @@ Public Class AnsiEscapeRenderer
         Dim startPos As Integer = rtb.TextLength
         rtb.AppendText(text)
         rtb.Select(startPos, text.Length)
+
         rtb.SelectionColor = state.ForeColor
         rtb.SelectionBackColor = state.BackColor
-        rtb.SelectionFont = New Font(rtb.Font.FontFamily, rtb.Font.Size, state.Style)
+
+        ' RichTextBox 的 SelectionFont 在选区包含多种字体时返回 null，直接赋新字体会被静默忽略。
+        ' 因此以当前选区真实字体（null 时回退控件字体）为基准，再叠加目标 Style 构造新字体，
+        ' 确保 Bold/Italic/Underline/Strikeout 等样式被可靠应用。
+        Dim baseFont As Font = If(rtb.SelectionFont, rtb.Font)
+        rtb.SelectionFont = New Font(baseFont.FontFamily, baseFont.Size, state.Style)
+
         rtb.SelectionStart = rtb.TextLength
         rtb.SelectionLength = 0
     End Sub
 
     ''' <summary>
-    ''' 回车：将光标所在行行尾内容清空，使后续文本从行首重绘（覆盖模式）。
-    ''' 适用于 prompt 刷新、进度条等 \r 重绘场景。
+    ''' 回车：将光标移回当前行首。终端语义中裸 \r 只重定位光标，不删除任何文本。
+    ''' 后续文本从行首覆盖写入；本实现以追加方式保留已有内容，
+    ''' 避免在无后续覆盖文本（如进度条未重绘）时丢失已显示内容。
     ''' </summary>
     Private Shared Sub CarriageReturn(rtb As RichTextBox)
         Dim caret As Integer = rtb.TextLength
         Dim lineIdx As Integer = rtb.GetLineFromCharIndex(caret)
         If lineIdx < 0 Then Return
         Dim lineStart As Integer = rtb.GetFirstCharIndexFromLine(lineIdx)
-        Dim lineEnd As Integer = LineEndIndex(rtb, lineIdx)
-        If lineEnd > lineStart Then
-            rtb.Select(lineStart, lineEnd - lineStart)
-            rtb.SelectedText = ""
-        End If
         rtb.SelectionStart = lineStart
         rtb.SelectionLength = 0
     End Sub
