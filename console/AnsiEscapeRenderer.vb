@@ -13,7 +13,9 @@ Public Class AnsiEscapeRenderer
     Private Const CSI As String = "["c                      ' CSI 引入符
 
     ' 标准 16 色（0-7 普通 / 8-15 亮色）：索引 = code - 30（前景）或 code - 40（背景）
-    Private Shared ReadOnly StandardColors As Color() = {
+    ' Public so the grid-based terminal renderer (TerminalControl) can reuse the
+    ' exact same palette.
+    Public Shared ReadOnly StandardColors As Color() = {
         Color.Black, Color.DarkRed, Color.DarkGreen, Color.DarkOrange,
         Color.DarkBlue, Color.DarkMagenta, Color.DarkCyan, Color.Gray,
         Color.DarkGray, Color.Red, Color.Green, Color.Yellow,
@@ -171,7 +173,7 @@ Public Class AnsiEscapeRenderer
 
     ' ============ SGR ============
 
-    Private Shared Sub ApplySgr(state As AnsiTerminalState, paramStr As String)
+    Public Shared Sub ApplySgr(state As AnsiTerminalState, paramStr As String)
         Dim parts As String() = If(String.IsNullOrEmpty(paramStr), New String() {""}, paramStr.Split(";"c))
         Dim i As Integer = 0
         If parts.Length = 1 AndAlso parts(0) = "" Then
@@ -243,7 +245,7 @@ Public Class AnsiEscapeRenderer
     ''' <summary>
     ''' 处理 38 / 48 的扩展颜色（256 色或真彩色）。返回处理到的参数索引。
     ''' </summary>
-    Private Shared Function ApplyExtendedColor(state As AnsiTerminalState, parts As String(), i As Integer, isFore As Boolean) As Integer
+    Public Shared Function ApplyExtendedColor(state As AnsiTerminalState, parts As String(), i As Integer, isFore As Boolean) As Integer
         Dim idx As Integer = i + 1
         If idx >= parts.Length Then Return i
         Dim mode As Integer = 0
@@ -286,7 +288,7 @@ Public Class AnsiEscapeRenderer
     ''' <summary>
     ''' 由 xterm 256 调色板索引得到 Color。
     ''' </summary>
-    Private Shared Function Xterm256Color(index As Integer) As Color
+    Public Shared Function Xterm256Color(index As Integer) As Color
         If index < 0 Then Return Color.White
         If index < 16 Then
             Return StandardColors(index)

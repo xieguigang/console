@@ -310,8 +310,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Private Sub InitialiseKeyMappings()
         '  Map 'tab'.
         KeyMappings.Add(New KeyMapping(False, False, False, Keys.Tab, "{TAB}", vbTab))
-        '  Map 'Ctrl-C'.
-        KeyMappings.Add(New KeyMapping(True, False, False, Keys.C, "^(c)", ChrW(3) & vbCrLf))
+        '  Map 'Ctrl-C'. The bare ETX (0x03) byte is sent as a raw signal via
+        '  WriteRaw so it is NOT followed by a line terminator; otherwise the
+        '  extra newline would prevent the interrupt from reaching the remote
+        '  process (e.g. it cannot interrupt `htop`).
+        KeyMappings.Add(New KeyMapping(True, False, False, Keys.C, "^(c)", ChrW(3)))
     End Sub
 
     ''' <summary>
@@ -398,9 +401,16 @@ Partial Public Class ConsoleControl : Inherits UserControl
             'WriteInput("\x3", Color.White, false);
             '}
 
-            '  If we handled a mapping, we're done here.
+            '  If we handled a mapping, suppress the default key handling and
+            '  forward the mapped input to the underlying session/process as a
+            '  raw byte stream (e.g. Ctrl+C => bare ETX, no extra newline).
             If mappings.Any() Then
                 e.SuppressKeyPress = True
+                For Each mapping As KeyMapping In mappings
+                    If mapping.StreamMapping <> "" Then
+                        SendMappedCommand(mapping.StreamMapping)
+                    End If
+                Next
                 Return
             End If
         End If
@@ -440,6 +450,28 @@ Partial Public Class ConsoleControl : Inherits UserControl
             '  Write the input (without echoing).
             Call WriteInput(input, Color.White, False)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Sends raw input to the underlying session/process without appending any
+    ''' line terminator. Used to deliver control signals such as Ctrl+C
+    ''' (<c>ChrW(3)</c>) that must reach the remote process intact.
+    ''' </summary>
+    ''' <param name="raw">The raw input to send.</param>
+    Public Overridable Sub WriteRaw(raw As String)
+        If m_console IsNot Nothing Then
+            m_console.WriteRaw(raw)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Forwards a mapped keyboard command (e.g. a key mapping) to the underlying
+    ''' session/process as raw bytes. Key mappings are sent verbatim (no extra
+    ''' line terminator is added) so control bytes such as Ctrl+C survive.
+    ''' </summary>
+    ''' <param name="command">The mapped command/byte sequence to send.</param>
+    Private Sub SendMappedCommand(command As String)
+        Call WriteRaw(command)
     End Sub
 
     ''' <summary>
@@ -514,7 +546,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="output">The output.</param>
     ''' <paramname="color">The color.</param>
-    Public Sub WriteOutput(output As String, color As Color)
+    Public Overridable Sub WriteOutput(output As String, color As Color)
         If lastInput.StringEmpty = False AndAlso (Equals(output, lastInput) OrElse Equals(output.Replace(vbCrLf, ""), lastInput)) Then
             Return
         End If
@@ -544,7 +576,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 仅在序列完整时才渲染，避免序列被截断导致渲染错乱。
     ''' </summary>
     ''' <paramname="ansiText">可能包含 ANSI 转义序列的文本</param>
-    Public Sub WriteAnsiEscape(ansiText As String)
+    Public Overridable Sub WriteAnsiEscape(ansiText As String)
         If ansiText Is Nothing Then Return
         If Not IsHandleCreated Then
             Return
@@ -589,7 +621,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Clears the output.
     ''' </summary>
-    Public Sub ClearOutput()
+    Public Overridable Sub ClearOutput()
         richTextBoxConsole.Clear()
         inputStart = 0
     End Sub
@@ -600,7 +632,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="input">The input.</param>
     ''' <paramname="color">The color.</param>
     ''' <paramname="echo">if set to <c>true</c> echo the input.</param>
-    Public Sub WriteInput(input As String, color As Color, echo As Boolean)
+    Public Overridable Sub WriteInput(input As String, color As Color, echo As Boolean)
         Invoke(Sub()
                    '  Are we echoing?
                    If echo Then
@@ -628,7 +660,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' a Connect() call). It does not change the behaviour of the existing
     ''' file-name based overloads used by the local console.
     ''' </summary>
-    Public Sub StartProcess()
+    Public Overridable Sub StartProcess()
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
             WriteOutput("Starting session..." & Environment.NewLine, Color.FromArgb(255, 0, 255, 0))

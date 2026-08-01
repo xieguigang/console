@@ -124,6 +124,15 @@ Namespace Win32
         Public MustOverride Sub WriteInput(input As String)
 
         ''' <summary>
+        ''' Writes raw input to the underlying session/process without appending
+        ''' any line terminator. Used to send control signals such as Ctrl+C
+        ''' (ETX, <c>ChrW(3)</c>) that must not be corrupted by an extra newline.
+        ''' Concrete back-ends override this.
+        ''' </summary>
+        ''' <param name="input">The raw input to send.</param>
+        Public MustOverride Sub WriteRaw(input As String)
+
+        ''' <summary>
         ''' Handles the ProgressChanged event of the outputWorker control.
         ''' </summary>
         ''' <paramname="sender">The source of the event.</param>

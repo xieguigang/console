@@ -168,6 +168,19 @@ Namespace Win32
             End If
         End Sub
 
+        ''' <summary>
+        ''' Writes raw input without appending a line terminator, so that control
+        ''' signals such as Ctrl+C (<c>ChrW(3)</c>) reach the child console intact.
+        ''' For a local process this writes directly to the redirected stdin stream.
+        ''' </summary>
+        ''' <param name="input">The raw input to send.</param>
+        Public Overrides Sub WriteRaw(input As String)
+            If IsProcessRunning AndAlso inputWriter IsNot Nothing Then
+                inputWriter.Write(input)
+                inputWriter.Flush()
+            End If
+        End Sub
+
         ''' <summary>Finalizes an instance of the <seecref="ProcessInterface"/> class.</summary>
         Protected Overrides Sub Finalize()
             Dispose(True)

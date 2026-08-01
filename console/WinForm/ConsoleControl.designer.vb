@@ -55,5 +55,7 @@ Partial Class ConsoleControl
 
 #End Region
 
-    Private WithEvents richTextBoxConsole As System.Windows.Forms.RichTextBox
+    '  Protected (instead of Private) so that derived controls such as TerminalControl
+    '  can drive the rich text box directly while rendering a character-grid terminal.
+    Protected Friend WithEvents richTextBoxConsole As System.Windows.Forms.RichTextBox
 End Class
