@@ -18,6 +18,8 @@
         ''' </value>
         Public ReadOnly Property Code As Integer?
 
+        Public ReadOnly Property Ansi As Boolean = False
+
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
         ''' </summary>
