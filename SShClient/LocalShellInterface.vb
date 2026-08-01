@@ -50,7 +50,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface
         If Not _running Then Return
 
         '  Start output on a new line (the cursor is at the end of the input line).
-        RaiseOutputEvent(vbCrLf)
+        ' RaiseOutputEvent(vbLf)
 
         Dim line As String = If(input, "").Trim()
 
@@ -494,9 +494,9 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface
         '  Build:  green(user@machine) reset : blue(cwd) reset $
         Dim promptText As String =
             New TextSpan(Environment.UserName & "@" & Environment.MachineName, AnsiColor.Green) &
-            AnsiEscapeCodes.Reset & ":" &
+            AnsiEscapeCodes.Reset & " " &
             New TextSpan(displayPath, AnsiColor.Cyan) &
-            AnsiEscapeCodes.Reset & "$ "
+            AnsiEscapeCodes.Reset & vbCrLf & "$ "
 
         RaiseOutputEvent(promptText)
     End Sub

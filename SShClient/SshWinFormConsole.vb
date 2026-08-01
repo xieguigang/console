@@ -257,7 +257,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     Private Sub OnSshExit(sender As Object, e As ProcessEventArgs)
         '  OnSshExit is raised on the background reader thread; marshal to UI.
         If ConsoleControl1.InvokeRequired Then
-            ConsoleControl1.BeginInvoke(New MethodInvoker(Sub() OnSshExit(sender, e)))
+            ConsoleControl1.Invoke(New MethodInvoker(Sub() OnSshExit(sender, e)))
             Return
         End If
 

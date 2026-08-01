@@ -135,12 +135,9 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
             End Try
 
             If read <= 0 Then
-                If client Is Nothing OrElse Not client.IsConnected Then
+                If CheckExit(decoder, buffer) Then
                     Exit While
                 End If
-
-                Thread.Sleep(20)
-                Continue While
             End If
 
             '  Decode the raw bytes (supports multi-byte UTF-8 and ANSI escapes).
@@ -159,6 +156,25 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
         '  Inform the console that the session ended.
         RaiseExitEvent()
     End Sub
+
+    Private Function CheckExit(decoder As Decoder, buffer As Byte()) As Boolean
+        '  A blocking read returning 0 (or negative) is EOF: the remote shell
+        '  channel has been closed. The SSH transport connection may still be
+        '  "Connected", so we must NOT gate the exit on client.IsConnected —
+        '  doing so spins forever. Flush any buffered decoder bytes, then exit.
+        Dim chars(buffer.Length + 1) As Char
+        Dim bytesUsed As Integer
+        Dim charsUsed As Integer
+        Dim completed As Boolean
+
+        decoder.Convert(buffer, 0, 0, chars, 0, chars.Length, True, bytesUsed, charsUsed, completed)
+
+        If charsUsed > 0 Then
+            RaiseOutputEvent(New String(chars, 0, charsUsed))
+        End If
+
+        Return True
+    End Function
 
     Public Overrides Sub WriteInput(input As String)
         If shell Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
