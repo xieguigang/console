@@ -49,6 +49,8 @@ Namespace Win32
 
         Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
 
+        Protected ansi As Boolean = False
+
         ''' <summary>
         ''' Gets a value indicating whether the underlying session/process is running.
         ''' The default implementation returns <c>false</c>; concrete back-ends
@@ -80,7 +82,7 @@ Namespace Win32
         ''' can push remote output to the hosting console.
         ''' </summary>
         Protected Sub RaiseOutputEvent(text As String)
-            RaiseEvent OnProcessOutput(Me, New ProcessEventArgs(text))
+            RaiseEvent OnProcessOutput(Me, New ProcessEventArgs(text, ansi:=ansi))
         End Sub
 
         ''' <summary>

@@ -26,13 +26,19 @@
         Public Sub New()
         End Sub
 
+        Public Sub New(content As String)
+            Me.Content = content
+        End Sub
+
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
         ''' </summary>
         ''' <paramname="content">The content.</param>
-        Public Sub New(content As String)
+        ''' <paramname="ansi">The content contains ANSI escape codes.</param>
+        Public Sub New(content As String, ansi As Boolean)
             '  Set the content and code.
             Me.Content = content
+            Me.Ansi = ansi
         End Sub
 
         ''' <summary>

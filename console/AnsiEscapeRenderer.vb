@@ -1,251 +1,426 @@
 ﻿Imports System.Text
 
 ''' <summary>
-''' Module code for render the ansi escape sequence text onto richtextbox control with styles.
+''' 将包含 ANSI escape sequence（xterm 子集）的文本渲染到 RichTextBox 上，
+''' 支持 SGR 颜色/样式（含 256 色与真彩色、亮色）、回车重绘(\r)、退格(\b)、
+''' 行内擦除(K) 与屏幕擦除(J)。渲染状态以 <see cref="AnsiTerminalState"/> 实例为单位维护，
+''' 可跨多次调用延续格式（需配合 ConsoleControl 的分片缓冲，避免转义序列被截断）。
 ''' </summary>
 Public Class AnsiEscapeRenderer
 
-    Private Shared ReadOnly EscapeChar As Char = ChrW(&H1B) ' ESC字符
-    Private Shared currentForeColor As Color = Color.Black
-    Private Shared currentBackColor As Color = Color.White
-    Private Shared currentStyle As FontStyle = FontStyle.Regular
+    Private Shared ReadOnly EscapeChar As Char = ChrW(&H1B) ' ESC 字符 (0x1B)
+    Private Shared ReadOnly OscChar As Char = ChrW(&H5D)    ' OSC 字符 (0x9D) - 忽略
+    Private Const CSI As String = "["c                      ' CSI 引入符
 
-    ' ANSI颜色代码到Color的映射
-    Private Shared ReadOnly AnsiColorMap As New Dictionary(Of Integer, Color) From {
-        {30, Color.Black},      ' 黑色前景
-        {31, Color.Red},        ' 红色前景
-        {32, Color.Green},      ' 绿色前景
-        {33, Color.Yellow},     ' 黄色前景
-        {34, Color.Blue},       ' 蓝色前景
-        {35, Color.Magenta},    ' 洋红前景
-        {36, Color.Cyan},       ' 青色前景
-        {37, Color.White},      ' 白色前景
-        {39, Color.Black},      ' 默认前景（黑色）        
-        {40, Color.Black},      ' 黑色背景
-        {41, Color.Red},        ' 红色背景
-        {42, Color.Green},      ' 绿色背景
-        {43, Color.Yellow},     ' 黄色背景
-        {44, Color.Blue},       ' 蓝色背景
-        {45, Color.Magenta},    ' 洋红背景
-        {46, Color.Cyan},       ' 青色背景
-        {47, Color.White},      ' 白色背景
-        {49, Color.White}       ' 默认背景（白色）
-    }
-
-    ' 样式代码映射
-    Private Shared ReadOnly StyleMap As New Dictionary(Of Integer, FontStyle) From {
-        {0, FontStyle.Regular},   ' 重置/正常
-        {1, FontStyle.Bold},      ' 粗体
-        {3, FontStyle.Italic},    ' 斜体
-        {4, FontStyle.Underline}  ' 下划线
+    ' 标准 16 色（0-7 普通 / 8-15 亮色）：索引 = code - 30（前景）或 code - 40（背景）
+    Private Shared ReadOnly StandardColors As Color() = {
+        Color.Black, Color.DarkRed, Color.DarkGreen, Color.DarkOrange,
+        Color.DarkBlue, Color.DarkMagenta, Color.DarkCyan, Color.Gray,
+        Color.DarkGray, Color.Red, Color.Green, Color.Yellow,
+        Color.Blue, Color.Magenta, Color.Cyan, Color.White
     }
 
     ''' <summary>
-    ''' 将包含ANSI转义序列的文本渲染到RichTextBox
+    ''' 跨调用延续的终端格式状态。默认与 ConsoleControl 的 RichTextBox 黑底白字一致。
     ''' </summary>
-    ''' <param name="rtb">目标RichTextBox控件</param>
-    ''' <param name="ansiText">包含ANSI序列的文本</param>
-    Public Shared Sub RenderAnsiText(rtb As RichTextBox, ansiText As String)
-        ' 保存原始选择状态
-        Dim originalStart As Integer = rtb.SelectionStart
-        Dim originalLength As Integer = rtb.SelectionLength
+    Public Class AnsiTerminalState
+        Public ForeColor As Color = Color.White
+        Public BackColor As Color = Color.Black
+        Public Style As FontStyle = FontStyle.Regular
 
-        ' 挂起UI更新以提高性能
+        ''' <summary>
+        ''' 重置为默认（白字黑底、常规样式）。对应 SGR 0 / 39 / 49。
+        ''' </summary>
+        Public Sub Reset()
+            ForeColor = Color.White
+            BackColor = Color.Black
+            Style = FontStyle.Regular
+        End Sub
+    End Class
+
+    ''' <summary>
+    ''' 将 ANSI 文本渲染到 RichTextBox（使用调用方持有的状态，跨调用延续格式）。
+    ''' </summary>
+    ''' <param name="rtb">目标 RichTextBox（应为已创建句柄、且由 UI 线程调用）</param>
+    ''' <param name="ansiText">完整（未被截断的）ANSI 文本</param>
+    ''' <param name="state">跨调用延续的格式状态；每次调用会读取并写回当前格式</param>
+    Public Shared Sub Render(rtb As RichTextBox, ansiText As String, state As AnsiTerminalState)
+        If rtb Is Nothing OrElse ansiText Is Nothing Then Return
+        If state Is Nothing Then state = New AnsiTerminalState()
+
+        ' 暂停绘制以提升性能（调用方已确保在 UI 线程）
         SendMessage(rtb.Handle, WM_SETREDRAW, False, 0)
-
         Try
-            ' 清除现有格式状态
-            ResetFormatState()
-
-            ' 将文本追加到RichTextBox（先清空或保留原有内容根据需求决定）
-            rtb.AppendText("")
-
-            ' 解析并应用ANSI序列
-            ParseAndApplyAnsiCodes(rtb, ansiText)
+            ParseAndApply(rtb, ansiText, state)
         Finally
-            ' 恢复UI更新
             SendMessage(rtb.Handle, WM_SETREDRAW, True, 0)
             rtb.Invalidate()
-
-            ' 恢复原始选择状态
-            rtb.SelectionStart = originalStart
-            rtb.SelectionLength = originalLength
+            ' 保持光标在文末，避免后续追加错位
+            rtb.SelectionStart = rtb.TextLength
+            rtb.SelectionLength = 0
         End Try
     End Sub
 
     ''' <summary>
-    ''' 解析ANSI序列并应用到RichTextBox
+    ''' 便捷静态入口：每次调用使用全新状态（不延续格式），用于演示/一次性渲染。
     ''' </summary>
-    Private Shared Sub ParseAndApplyAnsiCodes(rtb As RichTextBox, text As String)
-        Dim segments As New List(Of TextSegment)()
-        Dim currentPos As Integer = 0
-        Dim textStart As Integer = 0
-        Dim inEscapeSequence As Boolean = False
-        Dim escapeBuilder As New StringBuilder()
+    Public Shared Sub RenderAnsiText(rtb As RichTextBox, ansiText As String)
+        Render(rtb, ansiText, New AnsiTerminalState())
+    End Sub
 
-        ' 解析文本，识别ANSI序列
-        While currentPos < text.Length
-            Dim currentChar As Char = text(currentPos)
+    ' ============ 内部解析 ============
 
-            If inEscapeSequence Then
-                escapeBuilder.Append(currentChar)
+    Private Shared Sub ParseAndApply(rtb As RichTextBox, text As String, state As AnsiTerminalState)
+        Dim pos As Integer = 0
+        Dim buf As New StringBuilder() ' 当前待写入的纯文本缓存（带当前格式）
 
-                ' 检查序列结束（以字母结尾的序列）
-                If Char.IsLetter(currentChar) Then
-                    inEscapeSequence = False
-                    Dim escapeSeq As String = escapeBuilder.ToString()
+        Dim Flush = Sub()
+                       If buf.Length > 0 Then
+                           AppendStyled(rtb, buf.ToString(), state)
+                           buf.Clear()
+                       End If
+                   End Sub
 
-                    ' 处理转义序列
-                    If escapeSeq.StartsWith("[") Then
-                        ProcessAnsiSequence(rtb, escapeSeq, segments)
+        While pos < text.Length
+            Dim ch As Char = text(pos)
+
+            ' 转义序列起始：ESC [ 或 ESC ] （OSC 直接忽略到终止符）
+            If ch = EscapeChar Then
+                If pos + 1 < text.Length AndAlso text(pos + 1) = "["c Then
+                    Flush()
+                    Dim seqEnd As Integer = IndexOfCsiEnd(text, pos + 2)
+                    If seqEnd < 0 Then
+                        ' 序列未结束（理论上不应发生，因为 ConsoleControl 已做缓冲拼接）
+                        Exit While
                     End If
-
-                    escapeBuilder.Clear()
-                    textStart = currentPos + 1
-                End If
-            Else
-                If currentChar = EscapeChar AndAlso currentPos + 1 < text.Length AndAlso text(currentPos + 1) = "["c Then
-                    ' 找到转义序列开始，先保存前面的文本
-                    If currentPos > textStart Then
-                        segments.Add(New TextSegment With {
-                            .Text = text.Substring(textStart, currentPos - textStart),
-                            .ForeColor = currentForeColor,
-                            .BackColor = currentBackColor,
-                            .Style = currentStyle
-                        })
-                    End If
-
-                    inEscapeSequence = True
-                    escapeBuilder.Append("[")
-                    currentPos += 1 ' 跳过下一个字符（已经是"["）
-                    textStart = currentPos + 1
+                    Dim body As String = text.Substring(pos + 2, seqEnd - (pos + 2))
+                    HandleCsi(rtb, body, state)
+                    pos = seqEnd + 1
+                    Continue While
+                ElseIf pos + 1 < text.Length AndAlso text(pos + 1) = OscChar Then
+                    ' OSC 序列（如设置标题 \e]0;...\a），忽略到 BEL(0x07) 或 ST(\e\)
+                    Flush()
+                    Dim endOsc As Integer = text.IndexOf(ChrW(&H7), pos + 2)
+                    If endOsc < 0 Then Exit While
+                    pos = endOsc + 1
+                    Continue While
+                Else
+                    ' 裸 ESC 或其他，跳过
+                    pos += 1
+                    Continue While
                 End If
             End If
 
-            currentPos += 1
+            Select Case ch
+                Case ChrW(&HD) ' 回车 CR：清除当前行行尾并重绘
+                    Flush()
+                    CarriageReturn(rtb)
+                    pos += 1
+                Case ChrW(&H8) ' 退格 BS：删除光标前一个字符
+                    Flush()
+                    Backspace(rtb)
+                    pos += 1
+                Case Else
+                    buf.Append(ch)
+                    pos += 1
+            End Select
         End While
 
-        ' 添加最后一段文本
-        If textStart < text.Length Then
-            segments.Add(New TextSegment With {
-                .Text = text.Substring(textStart),
-                .ForeColor = currentForeColor,
-                .BackColor = currentBackColor,
-                .Style = currentStyle
-            })
-        End If
-
-        ' 应用所有文本段落到RichTextBox
-        ApplySegmentsToRichTextBox(rtb, segments)
+        Flush()
     End Sub
 
     ''' <summary>
-    ''' 处理ANSI控制序列并更新当前格式状态
+    ''' 找到 CSI 序列的结束位置（以字母结尾）。找不到返回 -1。
     ''' </summary>
-    Private Shared Sub ProcessAnsiSequence(rtb As RichTextBox, escapeSeq As String, segments As List(Of TextSegment))
-        If escapeSeq.Length < 2 Then Return
-
-        ' 提取数字参数（如"31m"中的31）
-        Dim codePart As String = escapeSeq.Substring(1, escapeSeq.Length - 1)
-
-        ' 处理SGR（Select Graphic Rendition）命令
-        If codePart.EndsWith("m") Then
-            Dim codeStr As String = codePart.Substring(0, codePart.Length - 1)
-            Dim codes As Integer() = ParseAnsiCodes(codeStr)
-
-            For Each code As Integer In codes
-                ApplyAnsiCode(code)
-            Next
-        End If
-    End Sub
-
-    ''' <summary>
-    ''' 解析ANSI代码参数（支持分号分隔的多个代码）
-    ''' </summary>
-    Private Shared Function ParseAnsiCodes(codeStr As String) As Integer()
-        If String.IsNullOrEmpty(codeStr) Then Return New Integer() {0} ' 默认重置
-
-        Dim parts As String() = codeStr.Split(";"c)
-        Dim codes As New List(Of Integer)()
-        Dim code As Integer = Nothing
-
-        For Each part As String In parts
-            If Integer.TryParse(part, code) Then
-                codes.Add(code)
-            Else
-                codes.Add(0) ' 解析失败时使用默认值
+    Private Shared Function IndexOfCsiEnd(text As String, start As Integer) As Integer
+        Dim i As Integer = start
+        While i < text.Length
+            Dim c As Char = text(i)
+            ' 结束符：终止字节（@ 到 ~ 的区间，即 0x40-0x7E 中的字母与符号）
+            If (c >= "A"c AndAlso c <= "Z"c) OrElse (c >= "a"c AndAlso c <= "z"c) OrElse c = "~"c Then
+                Return i
             End If
-        Next
+            If c = EscapeChar Then Return -1 ' 序列被新的 ESC 打断，视为不完整
+            i += 1
+        End While
+        Return -1
+    End Function
 
-        Return codes.ToArray()
+    ' ============ CSI 处理 ============
+
+    Private Shared Sub HandleCsi(rtb As RichTextBox, body As String, state As AnsiTerminalState)
+        If body.Length = 0 Then Return
+        Dim finalChar As Char = body(body.Length - 1)
+        Dim paramStr As String = body.Substring(0, body.Length - 1)
+
+        Select Case finalChar
+            Case "m"c ' SGR 颜色/样式
+                ApplySgr(state, paramStr)
+            Case "K"c ' 行内擦除
+                EraseInLine(rtb, ParseIntParam(paramStr, 0))
+            Case "J"c ' 屏幕擦除
+                EraseInDisplay(rtb, ParseIntParam(paramStr, 0))
+            Case "H"c, "f"c ' 光标定位（home/定位）—— RichTextBox 无真实网格，作 no-op 以不破坏内容
+                ' 故意忽略：避免将光标移动到缓冲区中部导致后续内容被插入到历史文本中
+            Case "A"c, "B"c, "C"c, "D"c, "E"c, "F"c, "G"c ' 光标相对移动 —— no-op
+            Case "s"c ' 保存光标位置 —— no-op
+            Case "u"c ' 恢复光标位置 —— no-op
+            Case "h"c, "l"c ' 模式设置/复位 —— 忽略
+            Case "r"c ' 滚动区域 —— 忽略
+            Case Else
+                ' 其它未识别 CSI（如设备状态报告）一律安全忽略
+        End Select
+    End Sub
+
+    ' ============ SGR ============
+
+    Private Shared Sub ApplySgr(state As AnsiTerminalState, paramStr As String)
+        Dim parts As String() = If(String.IsNullOrEmpty(paramStr), New String() {""}, paramStr.Split(";"c))
+        Dim i As Integer = 0
+        If parts.Length = 1 AndAlso parts(0) = "" Then
+            ' 空参数等价于重置
+            state.Reset()
+            Return
+        End If
+
+        While i < parts.Length
+            Dim code As Integer = 0
+            If Not Integer.TryParse(parts(i), code) Then code = 0
+
+            Select Case code
+                Case 0
+                    state.Reset()
+                Case 1 ' 粗体
+                    state.Style = state.Style Or FontStyle.Bold
+                Case 2 ' 弱化
+                    state.Style = state.Style Or FontStyle.Regular ' RTB 无弱化，近似不处理
+                Case 3 ' 斜体
+                    state.Style = state.Style Or FontStyle.Italic
+                Case 4 ' 下划线
+                    state.Style = state.Style Or FontStyle.Underline
+                Case 5, 6 ' 闪烁 —— RTB 不支持，忽略
+                Case 7 ' 反显：前景/背景互换
+                    Dim tmp As Color = state.ForeColor
+                    state.ForeColor = state.BackColor
+                    state.BackColor = tmp
+                Case 8 ' 隐藏 —— RTB 无隐藏属性，近似用背景色覆盖（与背景同色）
+                    state.ForeColor = state.BackColor
+                Case 9 ' 删除线
+                    state.Style = state.Style Or FontStyle.Strikeout
+                Case 21 ' 双下划线/关闭粗体近似
+                    state.Style = state.Style And Not FontStyle.Bold
+                Case 22 ' 关闭粗体/弱化
+                    state.Style = state.Style And Not FontStyle.Bold
+                Case 23
+                    state.Style = state.Style And Not FontStyle.Italic
+                Case 24
+                    state.Style = state.Style And Not FontStyle.Underline
+                Case 27 ' 关闭反显
+                    ' 无法可靠撤销，近似重置为默认
+                    state.ForeColor = Color.White
+                    state.BackColor = Color.Black
+                Case 29
+                    state.Style = state.Style And Not FontStyle.Strikeout
+                Case 30 To 37 ' 标准前景
+                    state.ForeColor = StandardColors(code - 30)
+                Case 38 ' 扩展前景：38;5;n 或 38;2;r;g;b
+                    i = ApplyExtendedColor(state, parts, i, True)
+                Case 39 ' 默认前景
+                    state.ForeColor = Color.White
+                Case 40 To 47 ' 标准背景
+                    state.BackColor = StandardColors(code - 40)
+                Case 48 ' 扩展背景：48;5;n 或 48;2;r;g;b
+                    i = ApplyExtendedColor(state, parts, i, False)
+                Case 49 ' 默认背景
+                    state.BackColor = Color.Black
+                Case 90 To 97 ' 亮色前景（同 8-15）
+                    state.ForeColor = StandardColors(code - 90 + 8)
+                Case 100 To 107 ' 亮色背景
+                    state.BackColor = StandardColors(code - 100 + 8)
+            End Select
+
+            i += 1
+        End While
+    End Sub
+
+    ''' <summary>
+    ''' 处理 38 / 48 的扩展颜色（256 色或真彩色）。返回处理到的参数索引。
+    ''' </summary>
+    Private Shared Function ApplyExtendedColor(state As AnsiTerminalState, parts As String(), i As Integer, isFore As Boolean) As Integer
+        Dim idx As Integer = i + 1
+        If idx >= parts.Length Then Return i
+        Dim mode As Integer = 0
+        If Not Integer.TryParse(parts(idx), mode) Then Return i
+
+        If mode = 5 Then
+            ' 256 色：38;5;n
+            idx += 1
+            If idx < parts.Length Then
+                Dim n As Integer = 0
+                If Integer.TryParse(parts(idx), n) Then
+                    Dim c As Color = Xterm256Color(n)
+                    If isFore Then state.ForeColor = c Else state.BackColor = c
+                End If
+            End If
+            Return idx
+        ElseIf mode = 2 Then
+            ' 真彩色：38;2;r;g;b
+            idx += 1
+            If idx + 2 < parts.Length Then
+                Dim r As Integer = 0, g As Integer = 0, b As Integer = 0
+                Integer.TryParse(parts(idx), r)
+                Integer.TryParse(parts(idx + 1), g)
+                Integer.TryParse(parts(idx + 2), b)
+                Dim c As Color = Color.FromArgb(ClampByte(r), ClampByte(g), ClampByte(b))
+                If isFore Then state.ForeColor = c Else state.BackColor = c
+                Return idx + 2
+            End If
+            Return idx + 2
+        End If
+        Return idx
+    End Function
+
+    Private Shared Function ClampByte(v As Integer) As Integer
+        If v < 0 Then Return 0
+        If v > 255 Then Return 255
+        Return v
     End Function
 
     ''' <summary>
-    ''' 应用单个ANSI代码到当前格式状态
+    ''' 由 xterm 256 调色板索引得到 Color。
     ''' </summary>
-    Private Shared Sub ApplyAnsiCode(code As Integer)
-        ' 处理重置和样式代码
-        If StyleMap.ContainsKey(code) Then
-            If code = 0 Then
-                ' 重置所有属性
-                currentForeColor = Color.Black
-                currentBackColor = Color.White
-                currentStyle = FontStyle.Regular
-            Else
-                currentStyle = currentStyle Or StyleMap(code)
-            End If
-        ElseIf AnsiColorMap.ContainsKey(code) Then
-            ' 处理颜色代码
-            If code >= 30 AndAlso code <= 37 Then
-                currentForeColor = AnsiColorMap(code) ' 前景色
-            ElseIf code = 39 Then
-                currentForeColor = Color.Black ' 默认前景色
-            ElseIf code >= 40 AndAlso code <= 47 Then
-                currentBackColor = AnsiColorMap(code) ' 背景色
-            ElseIf code = 49 Then
-                currentBackColor = Color.White ' 默认背景色
-            End If
+    Private Shared Function Xterm256Color(index As Integer) As Color
+        If index < 0 Then Return Color.White
+        If index < 16 Then
+            Return StandardColors(index)
+        ElseIf index < 232 Then
+            Dim n As Integer = index - 16
+            Dim r As Integer = n \ 36
+            Dim g As Integer = (n \ 6) Mod 6
+            Dim b As Integer = n Mod 6
+            Dim levels As Integer() = {0, 95, 135, 175, 215, 255}
+            Return Color.FromArgb(levels(r), levels(g), levels(b))
+        Else
+            Dim v As Integer = 8 + (index - 232) * 10
+            Return Color.FromArgb(v, v, v)
         End If
+    End Function
+
+    ' ============ 文本写入与光标/擦除操作 ============
+
+    ''' <summary>
+    ''' 以当前状态格式追加文本到底部。
+    ''' </summary>
+    Private Shared Sub AppendStyled(rtb As RichTextBox, text As String, state As AnsiTerminalState)
+        If String.IsNullOrEmpty(text) Then Return
+        Dim startPos As Integer = rtb.TextLength
+        rtb.AppendText(text)
+        rtb.Select(startPos, text.Length)
+        rtb.SelectionColor = state.ForeColor
+        rtb.SelectionBackColor = state.BackColor
+        rtb.SelectionFont = New Font(rtb.Font.FontFamily, rtb.Font.Size, state.Style)
+        rtb.SelectionStart = rtb.TextLength
+        rtb.SelectionLength = 0
     End Sub
 
     ''' <summary>
-    ''' 将解析后的文本段落应用到RichTextBox
+    ''' 回车：将光标所在行行尾内容清空，使后续文本从行首重绘（覆盖模式）。
+    ''' 适用于 prompt 刷新、进度条等 \r 重绘场景。
     ''' </summary>
-    Private Shared Sub ApplySegmentsToRichTextBox(rtb As RichTextBox, segments As List(Of TextSegment))
-        For Each segment As TextSegment In segments
-            If Not String.IsNullOrEmpty(segment.Text) Then
-                ' 保存当前插入位置
-                Dim startPos As Integer = rtb.TextLength
+    Private Shared Sub CarriageReturn(rtb As RichTextBox)
+        Dim caret As Integer = rtb.TextLength
+        Dim lineIdx As Integer = rtb.GetLineFromCharIndex(caret)
+        If lineIdx < 0 Then Return
+        Dim lineStart As Integer = rtb.GetFirstCharIndexFromLine(lineIdx)
+        Dim lineEnd As Integer = LineEndIndex(rtb, lineIdx)
+        If lineEnd > lineStart Then
+            rtb.Select(lineStart, lineEnd - lineStart)
+            rtb.SelectedText = ""
+        End If
+        rtb.SelectionStart = lineStart
+        rtb.SelectionLength = 0
+    End Sub
 
-                ' 追加文本
-                rtb.AppendText(segment.Text)
+    ''' <summary>
+    ''' 退格：删除光标前的一个字符。
+    ''' </summary>
+    Private Shared Sub Backspace(rtb As RichTextBox)
+        If rtb.TextLength > 0 Then
+            rtb.Select(rtb.TextLength - 1, 1)
+            rtb.SelectedText = ""
+        End If
+        rtb.SelectionStart = rtb.TextLength
+        rtb.SelectionLength = 0
+    End Sub
 
-                ' 应用格式
-                rtb.Select(startPos, segment.Text.Length)
-                rtb.SelectionColor = segment.ForeColor
+    ''' <summary>
+    ''' 行内擦除 K：0=光标到行尾，1=行首到光标，2=整行。
+    ''' </summary>
+    Private Shared Sub EraseInLine(rtb As RichTextBox, mode As Integer)
+        Dim caret As Integer = rtb.TextLength
+        Dim lineIdx As Integer = rtb.GetLineFromCharIndex(caret)
+        If lineIdx < 0 Then Return
+        Dim lineStart As Integer = rtb.GetFirstCharIndexFromLine(lineIdx)
+        Dim lineEnd As Integer = LineEndIndex(rtb, lineIdx)
 
-                ' 创建字体（注意：RichTextBox不支持单独设置背景色）
-                Dim currentFont As Font = rtb.SelectionFont
-                If currentFont IsNot Nothing Then
-                    rtb.SelectionFont = New Font(currentFont.FontFamily, currentFont.Size, segment.Style)
+        Select Case mode
+            Case 0 ' 光标到行尾
+                If caret < lineEnd Then DeleteRange(rtb, caret, lineEnd - caret)
+            Case 1 ' 行首到光标
+                If lineStart < caret Then DeleteRange(rtb, lineStart, caret - lineStart)
+            Case 2 ' 整行
+                If lineEnd > lineStart Then DeleteRange(rtb, lineStart, lineEnd - lineStart)
+        End Select
+        rtb.SelectionStart = rtb.TextLength
+        rtb.SelectionLength = 0
+    End Sub
+
+    ''' <summary>
+    ''' 屏幕擦除 J：0=光标到文末，1=文首到光标，2/3=全部。
+    ''' 在单缓冲区模型中以“删除文本”近似（保留可见内容一致性，不破坏历史文本结构）。
+    ''' </summary>
+    Private Shared Sub EraseInDisplay(rtb As RichTextBox, mode As Integer)
+        Select Case mode
+            Case 0 ' 光标到文末
+                If rtb.TextLength > rtb.SelectionStart Then
+                    DeleteRange(rtb, rtb.SelectionStart, rtb.TextLength - rtb.SelectionStart)
                 End If
+            Case 1 ' 文首到光标
+                If rtb.SelectionStart > 0 Then
+                    DeleteRange(rtb, 0, rtb.SelectionStart)
+                End If
+            Case 2, 3 ' 全部
+                rtb.Select(0, rtb.TextLength)
+                rtb.SelectedText = ""
+        End Select
+        rtb.SelectionStart = rtb.TextLength
+        rtb.SelectionLength = 0
+    End Sub
 
-                ' 取消选择
-                rtb.Select(rtb.TextLength, 0)
-            End If
-        Next
+    Private Shared Sub DeleteRange(rtb As RichTextBox, start As Integer, len As Integer)
+        rtb.Select(start, len)
+        rtb.SelectedText = ""
     End Sub
 
     ''' <summary>
-    ''' 重置格式状态到默认值
+    ''' 获取某行的结束字符索引（不含换行符）。
     ''' </summary>
-    Private Shared Sub ResetFormatState()
-        currentForeColor = Color.Black
-        currentBackColor = Color.White
-        currentStyle = FontStyle.Regular
-    End Sub
+    Private Shared Function LineEndIndex(rtb As RichTextBox, lineIdx As Integer) As Integer
+        If lineIdx + 1 < rtb.Lines.Length Then
+            Return rtb.GetFirstCharIndexFromLine(lineIdx + 1) - 1
+        End If
+        Return rtb.TextLength
+    End Function
 
-    ' Windows API声明（用于挂起UI更新）
+    Private Shared Function ParseIntParam(paramStr As String, defaultValue As Integer) As Integer
+        Dim v As Integer = defaultValue
+        If String.IsNullOrEmpty(paramStr) Then Return defaultValue
+        Dim first As String = paramStr.Split(";"c)(0)
+        If Not Integer.TryParse(first, v) Then Return defaultValue
+        Return v
+    End Function
+
+    ' Windows API 声明（挂起/恢复绘制）
     Private Const WM_SETREDRAW As Integer = &HB
 
     <System.Runtime.InteropServices.DllImport("user32.dll")>
@@ -253,7 +428,7 @@ Public Class AnsiEscapeRenderer
     End Function
 End Class
 
-' 文本段数据结构
+' 文本段数据结构（保留以供外部兼容）
 Public Class TextSegment
     Public Property Text As String
     Public Property ForeColor As Color

@@ -26,6 +26,21 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Private inputStart As Integer = -1
 
     ''' <summary>
+    ''' ANSI 输出缓冲：用于拼接被分片到达、尚未结束的转义序列（SSH 分包常见）。
+    ''' </summary>
+    Private ansiBuffer As New System.Text.StringBuilder()
+
+    ''' <summary>
+    ''' 跨调用延续的 ANSI 终端格式状态（前景/背景/样式）。
+    ''' </summary>
+    Private ansiState As New AnsiEscapeRenderer.AnsiTerminalState()
+
+    ''' <summary>
+    ''' ANSI 转义字符（ESC）。
+    ''' </summary>
+    Private Shared ReadOnly AnsiEscape As Char = ChrW(&H1B)
+
+    ''' <summary>
     ''' The is input enabled flag.
     ''' </summary>
     Private m_isInputEnabled As Boolean = True
@@ -245,8 +260,12 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="sender">The source of the event.</param>
     ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessOutput
-        '  Write the output, in white
-        WriteOutput(args.Content, Color.White)
+        '  若输出包含 ANSI escape 序列，则走 ANSI 渲染路径；否则按纯文本输出（白字）。
+        If args.Ansi Then
+            WriteAnsiEscape(args.Content)
+        Else
+            WriteOutput(args.Content, Color.White)
+        End If
 
         '  Fire the output event.
         FireConsoleOutputEvent(args.Content)
@@ -502,6 +521,10 @@ Partial Public Class ConsoleControl : Inherits UserControl
             Return
         End If
 
+        '  纯文本输出会打断任何未完成的 ANSI 序列，清空缓冲并重置延续状态。
+        ansiBuffer.Clear()
+        ansiState.Reset()
+
         Invoke(Sub()
                    '  Always append at the end of the content, regardless of where the
                    '  caret/selection currently is (matches native console behaviour).
@@ -514,9 +537,53 @@ Partial Public Class ConsoleControl : Inherits UserControl
                End Sub)
     End Sub
 
+    ''' <summary>
+    ''' 写入包含 ANSI escape sequence 的文本并渲染。
+    ''' 通过内部缓冲拼接被分片到达、尚未结束的转义序列（SSH 分包常见），
+    ''' 仅在序列完整时才渲染，避免序列被截断导致渲染错乱。
+    ''' </summary>
+    ''' <paramname="ansiText">可能包含 ANSI 转义序列的文本</param>
     Public Sub WriteAnsiEscape(ansiText As String)
-        Call AnsiEscapeRenderer.RenderAnsiText(richTextBoxConsole, ansiText)
+        If ansiText Is Nothing Then Return
+        If Not IsHandleCreated Then
+            Return
+        End If
+
+        '  拼接缓冲并判断是否还有未结束的转义序列（以 ESC 开头但未遇到终止字母）。
+        ansiBuffer.Append(ansiText)
+        If IsInsideUnterminatedEscape(ansiBuffer.ToString()) Then
+            '  序列尚未接收完整，等待后续数据。
+            Return
+        End If
+
+        Dim textToRender As String = ansiBuffer.ToString()
+        ansiBuffer.Clear()
+
+        Invoke(Sub()
+                   AnsiEscapeRenderer.Render(richTextBoxConsole, textToRender, ansiState)
+                   inputStart = richTextBoxConsole.TextLength
+                   richTextBoxConsole.ScrollToCaret()
+               End Sub)
     End Sub
+
+    ''' <summary>
+    ''' 判断文本末尾是否处于一个尚未结束的转义序列中（ESC 之后未遇到字母/符号终止符）。
+    ''' </summary>
+    Private Shared Function IsInsideUnterminatedEscape(text As String) As Boolean
+        Dim escIdx As Integer = text.LastIndexOf(AnsiEscape)
+        If escIdx < 0 Then Return False
+        '  从 ESC 之后查找 CSI 终止字符（字母或 ~）；若找不到则说明序列未完成。
+        For i As Integer = escIdx + 1 To text.Length - 1
+            Dim c As Char = text(i)
+            If (c >= "A"c AndAlso c <= "Z"c) OrElse (c >= "a"c AndAlso c <= "z"c) OrElse c = "~"c Then
+                Return False
+            End If
+            If c = AnsiEscape Then
+                Return False
+            End If
+        Next
+        Return True
+    End Function
 
     ''' <summary>
     ''' Clears the output.
