@@ -75,6 +75,29 @@ Namespace Win32
         End Sub
 
         ''' <summary>
+        ''' Raises the <see cref="OnProcessOutput"/> event. Provided so derived
+        ''' back-ends (which cannot <c>RaiseEvent</c> a base-class event directly)
+        ''' can push remote output to the hosting console.
+        ''' </summary>
+        Protected Sub RaiseOutputEvent(text As String)
+            RaiseEvent OnProcessOutput(Me, New ProcessEventArgs(text))
+        End Sub
+
+        ''' <summary>
+        ''' Raises the <see cref="OnProcessError"/> event.
+        ''' </summary>
+        Protected Sub RaiseErrorEvent(text As String)
+            RaiseEvent OnProcessError(Me, New ProcessEventArgs(text))
+        End Sub
+
+        ''' <summary>
+        ''' Raises the <see cref="OnProcessExit"/> event.
+        ''' </summary>
+        Protected Sub RaiseExitEvent()
+            RaiseEvent OnProcessExit(Me, New ProcessEventArgs(String.Empty))
+        End Sub
+
+        ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessInterface"/> class.
         ''' </summary>
         Protected Sub New(void As Object)
