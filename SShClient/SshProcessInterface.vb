@@ -1,6 +1,5 @@
 Imports System.Text
 Imports System.Threading
-Imports Microsoft.VisualBasic.ApplicationServices.Terminal
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 Imports Renci.SshNet.Common
 Imports SSH = Renci.SshNet

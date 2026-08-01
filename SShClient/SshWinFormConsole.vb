@@ -13,6 +13,7 @@ Imports std = System.Math
 Public Class SshWinFormConsole : Inherits UserControl
 
     Private sshInterface As SshProcessInterface = Nothing
+    Private WithEvents localInterface As LocalShellInterface = Nothing
     '  Use TerminalControl (grid-based renderer) so htop/btop clear-screen
     '  repaints and Ctrl+C interrupt signalling work correctly.
     Friend WithEvents ConsoleControl1 As ConsoleControl
@@ -254,11 +255,38 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     Private Sub OnSshExit(sender As Object, e As ProcessEventArgs)
+        '  OnSshExit is raised on the background reader thread; marshal to UI.
+        If ConsoleControl1.InvokeRequired Then
+            ConsoleControl1.BeginInvoke(New MethodInvoker(Sub() OnSshExit(sender, e)))
+            Return
+        End If
+
         ConsoleControl1.WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
+        Disconnect()
+        StartLocalShell()
+    End Sub
+
+    ''' <summary>
+    ''' Creates a fresh <see cref="LocalShellInterface"/>, subscribes to its
+    ''' <see cref="LocalShellInterface.SshConnectRequested"/> event, assigns it
+    ''' as the console back-end and starts the local session.
+    ''' </summary>
+    Private Sub StartLocalShell()
+        '  WithEvents + Handles auto-wires SshConnectRequested when the field is set.
+        localInterface = New LocalShellInterface()
+        ConsoleControl1.SetConsoleCore(localInterface)
+        ConsoleControl1.StartProcess()
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <c>ssh [-p port] user@host</c> command from the local shell
+    ''' by creating a real SSH connection.
+    ''' </summary>
+    Private Sub OnSshConnectRequested(options As SshConnectionOptions) Handles localInterface.SshConnectRequested
+        Connect(options)
     End Sub
 
     Private Sub SshWinFormConsole_Load(sender As Object, e As EventArgs) Handles Me.Load
-        Call ConsoleControl1.SetConsoleCore(New LocalShellInterface)
-        Call ConsoleControl1.StartProcess()
+        StartLocalShell()
     End Sub
 End Class
