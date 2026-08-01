@@ -1,4 +1,5 @@
 ﻿Imports System.ComponentModel
+Imports Microsoft.VisualBasic.ApplicationServices.Terminal
 Imports Microsoft.VisualBasic.Windows.Forms
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 Imports std = System.Math
@@ -235,7 +236,7 @@ Public Class SshWinFormConsole : Inherits UserControl
         ConsoleControl1.Location = New Point(0, 0)
         ConsoleControl1.Margin = New Padding(4, 4, 4, 4)
         ConsoleControl1.Name = "ConsoleControl1"
-        ConsoleControl1.ReadOnly = True
+
         '  Keyboard commands (incl. Ctrl+C) are forwarded to the shell so control
         '  signals reach the remote process and can interrupt programs such as htop.
         ConsoleControl1.SendKeyboardCommandsToProcess = True
@@ -257,6 +258,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     Private Sub SshWinFormConsole_Load(sender As Object, e As EventArgs) Handles Me.Load
-        Call ConsoleControl1.WriteOutput(" $ ", Color.White)
+        Call ConsoleControl1.SetConsoleCore(New LocalShellInterface)
+        Call ConsoleControl1.StartProcess()
     End Sub
 End Class
