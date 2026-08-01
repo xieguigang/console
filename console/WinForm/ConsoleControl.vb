@@ -103,11 +103,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     <Browsable(False)>
     Public ReadOnly Property IsProcessRunning As Boolean
         Get
-            If TypeOf ProcessInterface Is ProcessInterface Then
-                Return DirectCast(m_console, ProcessInterface).IsProcessRunning
-            End If
-
-            Return False
+            '  Delegate to the (possibly overridden) back-end property so that any
+            '  AbstractProcessInterface implementation (local process, SSH, ...) works.
+            Return m_console.IsProcessRunning
         End Get
     End Property
 
