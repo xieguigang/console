@@ -18,7 +18,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' The internal process interface used to interface with the process.
     ''' </summary>
-    Dim WithEvents m_console As AbstractProcessInterface
+    Protected WithEvents m_console As AbstractProcessInterface
 
     ''' <summary>
     ''' Current position that input starts at.
