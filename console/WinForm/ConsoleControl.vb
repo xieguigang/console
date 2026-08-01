@@ -443,6 +443,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
                 input = richTextBoxConsole.Text.Substring(inputStart, strlen)
             End If
 
+            input = Strings.Trim(input)
+
             '  Record non-empty input into the history so it can be recalled with the
             '  up/down arrows. Reset the index to the end so the next Up starts from the
             '  most recently submitted command.
