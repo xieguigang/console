@@ -177,6 +177,26 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
     End Sub
 
     ''' <summary>
+    ''' Writes raw input to the remote shell without appending any line terminator.
+    ''' This is required to deliver control signals such as Ctrl+C (<c>ChrW(3)</c>)
+    ''' intact, so the remote process group can be interrupted.
+    ''' </summary>
+    ''' <param name="input">The raw input to send.</param>
+    Public Overrides Sub WriteRaw(input As String)
+        If shell Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
+            Return
+        End If
+
+        Try
+            Dim data = Encoding.GetBytes(input)
+            shell.Write(data, 0, data.Length)
+            shell.Flush()
+        Catch ex As Exception
+            RaiseErrorEvent("SSH write error: " & ex.Message & Environment.NewLine)
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' Records the requested terminal size. The SSH.NET 2025.1.0 ShellStream no
     ''' longer exposes a runtime resize API, so the reported size is applied on the
     ''' next connection. (The initial size is set in <see cref="StartProcess"/>.)

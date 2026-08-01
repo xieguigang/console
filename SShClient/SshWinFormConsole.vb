@@ -11,7 +11,9 @@ Imports Microsoft.VisualBasic.Windows.Forms.Win32
 Public Class SshWinFormConsole : Inherits UserControl
 
     Private sshInterface As SshProcessInterface = Nothing
-    Friend WithEvents ConsoleControl1 As ConsoleControl
+    '  Use TerminalControl (grid-based renderer) so htop/btop clear-screen
+    '  repaints and Ctrl+C interrupt signalling work correctly.
+    Friend WithEvents ConsoleControl1 As Console.TerminalControl
     Private m_autoConnectOnFocus As Boolean = False
 
     ''' <summary>
@@ -222,7 +224,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     Private Sub InitializeComponent()
-        ConsoleControl1 = New ConsoleControl()
+        ConsoleControl1 = New Console.TerminalControl()
         SuspendLayout()
         ' 
         ' ConsoleControl1
@@ -233,7 +235,9 @@ Public Class SshWinFormConsole : Inherits UserControl
         ConsoleControl1.Margin = New Padding(4, 4, 4, 4)
         ConsoleControl1.Name = "ConsoleControl1"
         ConsoleControl1.ReadOnly = True
-        ConsoleControl1.SendKeyboardCommandsToProcess = False
+        '  Keyboard commands (incl. Ctrl+C) are forwarded to the shell so control
+        '  signals reach the remote process and can interrupt programs such as htop.
+        ConsoleControl1.SendKeyboardCommandsToProcess = True
         ConsoleControl1.ShowDiagnostics = False
         ConsoleControl1.Size = New Size(852, 663)
         ConsoleControl1.TabIndex = 0
