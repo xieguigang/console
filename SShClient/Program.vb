@@ -6,13 +6,13 @@ Namespace SShClient
     ''' Application entry point. Launches the demo <see cref="MainForm"/> so the
     ''' <see cref="SshWinFormConsole"/> control can be exercised directly.
     ''' </summary>
-    Public Module Program
+    Public Class Program
 
         <STAThread>
-        Public Sub Main()
+        Public Shared Sub Main()
             Application.EnableVisualStyles()
             Application.SetCompatibleTextRenderingDefault(False)
             Application.Run(New MainForm())
         End Sub
-    End Module
+    End Class
 End Namespace

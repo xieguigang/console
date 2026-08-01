@@ -10,14 +10,13 @@ Namespace SShClient
     ''' <summary>
     ''' An <see cref="AbstractProcessInterface"/> implementation that drives a remote
     ''' shell over SSH using the SSH.NET library. The remote shell is attached to a
-    ''' bidirectional <see cref="PipeStream"/> via <see cref="SSH.SshClient.CreateShell"/>,
-    ''' so the hosting console control reuses its existing ANSI rendering and input
-    ''' pipeline unchanged.
+    ''' <see cref="SSH.ShellStream"/>, so the hosting console control reuses its
+    ''' existing ANSI rendering and input pipeline unchanged.
     ''' </summary>
     Public Class SshProcessInterface : Inherits AbstractProcessInterface
 
         Private client As SSH.SshClient = Nothing
-        Private pipe As PipeStream = Nothing
+        Private shell As SSH.ShellStream = Nothing
         Private readThread As Thread = Nothing
         Private runRead As Boolean = False
         Private ReadOnly sync As New Object()
@@ -48,7 +47,7 @@ Namespace SShClient
         ''' <summary>
         ''' Builds a <see cref="SSH.ConnectionInfo"/> from the configured options.
         ''' Supports password authentication, private-key authentication and an
-        ''' optional HTTP/SOCKS proxy, mirroring the reference implementation.
+        ''' optional HTTP proxy, mirroring the reference implementation.
         ''' </summary>
         Private Function BuildConnectionInfo() As SSH.ConnectionInfo
             Dim o = Options
@@ -64,25 +63,15 @@ Namespace SShClient
                 auths.Add(New SSH.PasswordAuthenticationMethod(o.UserName, o.Password))
             End If
 
-            Dim info As SSH.ConnectionInfo
-
+            '  ConnectionInfo(host, port, user, proxyType, proxyHost, proxyPort,
+            '                proxyUser, proxyPass, authMethods())
             If Not String.IsNullOrWhiteSpace(o.ProxyHost) AndAlso o.ProxyPort > 0 Then
-                Dim proxyType = SSH.ProxyTypes.Http
-                Dim proxy = New SSH.ProxyInfo(proxyType, o.ProxyHost, o.ProxyPort, o.ProxyUserName, o.ProxyPassword)
-                info = New SSH.ConnectionInfo(o.Host, o.Port, o.UserName, proxy, auths.ToArray())
-            Else
-                info = New SSH.ConnectionInfo(o.Host, o.Port, o.UserName, auths.ToArray())
+                Return New SSH.ConnectionInfo(o.Host, o.Port, o.UserName,
+                                              SSH.ProxyTypes.Http, o.ProxyHost, o.ProxyPort,
+                                              o.ProxyUserName, o.ProxyPassword, auths.ToArray())
             End If
 
-            If o.AcceptAnyHostKey Then
-                '  Insecure: trust any host key (testing only).
-                AddHandler info.HostKeyReceived,
-                    Sub(sender As Object, e As SSH.HostKeyEventArgs)
-                        e.CanTrust = True
-                    End Sub
-            End If
-
-            Return info
+            Return New SSH.ConnectionInfo(o.Host, o.Port, o.UserName, auths.ToArray())
         End Function
 
         Public Overrides Sub StartProcess()
@@ -91,7 +80,7 @@ Namespace SShClient
             End If
 
             If Options Is Nothing OrElse Not Options.IsValid() Then
-                RaiseEvent OnProcessError(Me, New ProcessEventArgs("Invalid SSH connection options (host and user name are required)." & Environment.NewLine))
+                RaiseErrorEvent("Invalid SSH connection options (host and user name are required)." & Environment.NewLine)
                 Return
             End If
 
@@ -100,21 +89,23 @@ Namespace SShClient
                 client = New SSH.SshClient(info)
                 client.KeepAliveInterval = TimeSpan.FromSeconds(30)
 
-                If Not Options.AcceptAnyHostKey Then
-                    '  Report untrusted host keys as errors instead of silently trusting them.
-                    AddHandler client.HostKeyReceived,
-                        Sub(sender As Object, e As SSH.HostKeyEventArgs)
-                            If Not e.CanTrust Then
-                                RaiseEvent OnProcessError(Me, New ProcessEventArgs("Host key received but not trusted: " & e.FingerPrint & Environment.NewLine))
-                            End If
-                        End Sub
-                End If
+                '  Host-key verification. By default we do NOT trust unknown keys; the
+                '  AcceptAnyHostKey flag (testing only) trusts everything.
+                AddHandler client.HostKeyReceived,
+                    Sub(sender As Object, e As SSH.HostKeyEventArgs)
+                        If Options.AcceptAnyHostKey Then
+                            e.CanTrust = True
+                        ElseIf Not e.CanTrust Then
+                            RaiseErrorEvent("Host key not trusted: " & e.FingerPrintSHA256 & Environment.NewLine)
+                        End If
+                    End Sub
 
                 client.Connect()
 
-                '  Attach the remote shell to a bidirectional pipe.
-                pipe = New PipeStream()
-                client.CreateShell(pipe, Rows, Columns, 0UI, 0UI, If(String.IsNullOrWhiteSpace(Options.TerminalType), "xterm", Options.TerminalType))
+                '  Attach the remote shell to a ShellStream (bidirectional).
+                shell = client.CreateShellStream(
+                    If(String.IsNullOrWhiteSpace(Options.TerminalType), "xterm", Options.TerminalType),
+                    Columns, Rows, 0UI, 0UI, 1024)
 
                 '  Start the background reader that pumps remote output into the console.
                 runRead = True
@@ -126,7 +117,7 @@ Namespace SShClient
         End Sub
 
         ''' <summary>
-        ''' Background loop: reads remote output bytes from the pipe and raises
+        ''' Background loop: reads remote output bytes from the shell stream and raises
         ''' <see cref="AbstractProcessInterface.OnProcessOutput"/> so the console
         ''' control can render them.
         ''' </summary>
@@ -134,13 +125,13 @@ Namespace SShClient
             Dim buffer(4095) As Byte
             Dim decoder = Encoding.GetDecoder()
 
-            While runRead AndAlso pipe IsNot Nothing
+            While runRead AndAlso shell IsNot Nothing
                 Dim read As Integer = 0
 
                 Try
-                    read = pipe.Read(buffer, 0, buffer.Length)
+                    read = shell.Read(buffer, 0, buffer.Length)
                 Catch ex As Exception
-                    RaiseEvent OnProcessError(Me, New ProcessEventArgs("SSH read error: " & ex.Message & Environment.NewLine))
+                    RaiseErrorEvent("SSH read error: " & ex.Message & Environment.NewLine)
                     Exit While
                 End Try
 
@@ -155,22 +146,23 @@ Namespace SShClient
 
                 '  Decode the raw bytes (supports multi-byte UTF-8 and ANSI escapes).
                 Dim chars(buffer.Length + 1) As Char
-                Dim used As Integer
+                Dim bytesUsed As Integer
+                Dim charsUsed As Integer
                 Dim completed As Boolean
-                decoder.Convert(buffer, 0, read, chars, 0, chars.Length, False, used, completed)
-                Dim text = New String(chars, 0, used)
+                decoder.Convert(buffer, 0, read, chars, 0, chars.Length, False, bytesUsed, charsUsed, completed)
+                Dim text = New String(chars, 0, charsUsed)
 
                 If text.Length > 0 Then
-                    RaiseEvent OnProcessOutput(Me, New ProcessEventArgs(text))
+                    RaiseOutputEvent(text)
                 End If
             End While
 
             '  Inform the console that the session ended.
-            RaiseEvent OnProcessExit(Me, New ProcessEventArgs(String.Empty))
+            RaiseExitEvent()
         End Sub
 
         Public Overrides Sub WriteInput(input As String)
-            If pipe Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
+            If shell Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
                 Return
             End If
 
@@ -178,10 +170,10 @@ Namespace SShClient
                 '  The console sends a completed line without a trailing newline,
                 '  so terminate it the way an interactive shell expects.
                 Dim data = Encoding.GetBytes(input & vbCrLf)
-                pipe.Write(data, 0, data.Length)
-                pipe.Flush()
+                shell.Write(data, 0, data.Length)
+                shell.Flush()
             Catch ex As Exception
-                RaiseEvent OnProcessError(Me, New ProcessEventArgs("SSH write error: " & ex.Message & Environment.NewLine))
+                RaiseErrorEvent("SSH write error: " & ex.Message & Environment.NewLine)
             End Try
         End Sub
 
@@ -193,10 +185,10 @@ Namespace SShClient
             Columns = columns
             Rows = rows
 
-            If client IsNot Nothing AndAlso client.IsConnected Then
+            If shell IsNot Nothing Then
                 SyncLock sync
                     Try
-                        client.SendShellResizeRequest(rows, columns, 0UI, 0UI)
+                        shell.ResizeTerminal(CInt(rows), CInt(columns), 0, 0)
                     Catch
                         '  Resize is best-effort; ignore failures.
                     End Try
@@ -215,6 +207,15 @@ Namespace SShClient
                     End Try
                 End If
 
+                If shell IsNot Nothing Then
+                    Try
+                        shell.Dispose()
+                    Catch
+                    End Try
+
+                    shell = Nothing
+                End If
+
                 If client IsNot Nothing Then
                     Try
                         client.Dispose()
@@ -223,8 +224,6 @@ Namespace SShClient
 
                     client = Nothing
                 End If
-
-                pipe = Nothing
             End SyncLock
         End Sub
 
