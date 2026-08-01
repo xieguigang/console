@@ -50,6 +50,31 @@ Namespace Win32
         Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
 
         ''' <summary>
+        ''' Gets a value indicating whether the underlying session/process is running.
+        ''' The default implementation returns <c>false</c>; concrete back-ends
+        ''' (local process, SSH session, etc.) override this.
+        ''' </summary>
+        Public Overridable ReadOnly Property IsProcessRunning As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Starts the session/process. The parameterless overload is used by
+        ''' back-ends (such as an SSH shell) that already have their connection
+        ''' parameters configured out-of-band. Concrete back-ends override it.
+        ''' </summary>
+        Public Overridable Sub StartProcess()
+        End Sub
+
+        ''' <summary>
+        ''' Stops the session/process. Concrete back-ends override it.
+        ''' </summary>
+        Public Overridable Sub StopProcess()
+        End Sub
+
+        ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessInterface"/> class.
         ''' </summary>
         Protected Sub New(void As Object)

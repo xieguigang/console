@@ -15,7 +15,7 @@ Namespace Win32
         ''' <value>
         ''' 	<c>true</c> if this instance is process running; otherwise, <c>false</c>.
         ''' </value>
-        Public ReadOnly Property IsProcessRunning As Boolean
+        Public Overrides ReadOnly Property IsProcessRunning As Boolean
             Get
                 Try
                     Return Process IsNot Nothing AndAlso Process.HasExited = False
@@ -51,6 +51,16 @@ Namespace Win32
 
         Sub New()
             Call MyBase.New(void:=Nothing)
+        End Sub
+
+        ''' <summary>
+        ''' Runs the default local console (cmd.exe) without arguments.
+        ''' Provided so the parameterless <seecref="AbstractProcessInterface.StartProcess"/>
+        ''' contract can drive a local shell as well.
+        ''' </summary>
+        Public Overrides Sub StartProcess()
+            '  Start the default local console.
+            Call StartProcess("cmd.exe", "")
         End Sub
 
         ''' <summary>
@@ -113,7 +123,7 @@ Namespace Win32
         ''' <summary>
         ''' Stops the process.
         ''' </summary>
-        Public Sub StopProcess()
+        Public Overrides Sub StopProcess()
             '  Handle the trivial case.
             If IsProcessRunning = False Then
                 Return
