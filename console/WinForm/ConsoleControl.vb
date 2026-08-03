@@ -156,6 +156,70 @@ Partial Public Class ConsoleControl : Inherits UserControl
     Public ReadOnly Property KeyMappings As New List(Of KeyMapping) Implements IConsoleControl.KeyMappings
 
     ''' <summary>
+    ''' Gets the number of character columns that currently fit in the console
+    ''' viewport, measured from the actual console font metrics.
+    ''' </summary>
+    <Browsable(False)>
+    Public Overridable ReadOnly Property TerminalColumns As Integer Implements IConsoleControl.TerminalColumns
+        Get
+            Return MeasureGrid().Columns
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Gets the number of character rows that currently fit in the console
+    ''' viewport, measured from the actual console font metrics.
+    ''' </summary>
+    <Browsable(False)>
+    Public Overridable ReadOnly Property TerminalRows As Integer Implements IConsoleControl.TerminalRows
+        Get
+            Return MeasureGrid().Rows
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Measures how many whole character cells fit into the console viewport.
+    ''' </summary>
+    ''' <remarks>
+    ''' The console font is monospaced, so a single reference glyph is enough to
+    ''' derive the cell size. Values are clamped to sane minimums so that callers
+    ''' never propagate a degenerate (zero or negative) window size to a pty.
+    ''' </remarks>
+    Private Function MeasureGrid() As (Columns As Integer, Rows As Integer)
+        Const fallbackColumns As Integer = 80
+        Const fallbackRows As Integer = 24
+
+        Dim box As RichTextBox = richTextBoxConsole
+
+        If box Is Nothing OrElse box.IsDisposed OrElse box.Font Is Nothing Then
+            Return (fallbackColumns, fallbackRows)
+        End If
+
+        Try
+            Using g As Graphics = box.CreateGraphics()
+                '  TextRenderer matches the GDI metrics the RichTextBox actually
+                '  paints with; MeasureString would over-report by the padding it
+                '  reserves for proportional fonts.
+                Dim cell As Size = TextRenderer.MeasureText(g, "0", box.Font, New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding)
+
+                If cell.Width <= 0 OrElse cell.Height <= 0 Then
+                    Return (fallbackColumns, fallbackRows)
+                End If
+
+                Dim area As Size = box.ClientSize
+                Dim columns As Integer = System.Math.Max(1, (area.Width - SystemInformation.VerticalScrollBarWidth) \ cell.Width)
+                Dim rows As Integer = System.Math.Max(1, area.Height \ cell.Height)
+
+                Return (columns, rows)
+            End Using
+        Catch
+            '  The handle may not exist yet (designer, pre-Load); fall back rather
+            '  than surfacing an exception through a simple property read.
+            Return (fallbackColumns, fallbackRows)
+        End Try
+    End Function
+
+    ''' <summary>
     ''' Gets or sets the font of the text displayed by the control.
     ''' </summary>
     ''' <returns>The <seecref="T:System.Drawing.Font"/> to apply to the text displayed by the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultFont"/> property.</returns>
@@ -234,11 +298,11 @@ Partial Public Class ConsoleControl : Inherits UserControl
         richTextBoxConsole.ContextMenuStrip = New ContextMenuStrip()
     End Sub
 
-    Public Sub SetConsoleCore([interface] As AbstractProcessInterface)
+    Public Sub SetConsoleCore([interface] As AbstractProcessInterface) Implements IConsoleControl.SetConsoleCore
         m_console = [interface]
     End Sub
 
-    Public Function GetInterface() As AbstractProcessInterface
+    Public Function GetInterface() As AbstractProcessInterface Implements IConsoleControl.GetInterface
         Return ProcessInterface
     End Function
 
@@ -465,7 +529,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' (<c>ChrW(3)</c>) that must reach the remote process intact.
     ''' </summary>
     ''' <param name="raw">The raw input to send.</param>
-    Public Overridable Sub WriteRaw(raw As String)
+    Public Overridable Sub WriteRaw(raw As String) Implements IConsoleControl.WriteRaw
         If m_console IsNot Nothing Then
             m_console.WriteRaw(raw)
         End If
@@ -553,7 +617,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="output">The output.</param>
     ''' <paramname="color">The color.</param>
-    Public Overridable Sub WriteOutput(output As String, color As Color)
+    Public Overridable Sub WriteOutput(output As String, color As Color) Implements IConsoleControl.WriteOutput
         If lastInput.StringEmpty = False AndAlso (Equals(output, lastInput) OrElse Equals(output.Replace(vbCrLf, ""), lastInput)) Then
             Return
         End If
@@ -583,7 +647,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 仅在序列完整时才渲染，避免序列被截断导致渲染错乱。
     ''' </summary>
     ''' <paramname="ansiText">可能包含 ANSI 转义序列的文本</param>
-    Public Overridable Sub WriteAnsiEscape(ansiText As String)
+    Public Overridable Sub WriteAnsiEscape(ansiText As String) Implements IConsoleControl.WriteAnsiEscape
         If ansiText Is Nothing Then Return
         If Not IsHandleCreated Then
             Return
@@ -628,7 +692,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Clears the output.
     ''' </summary>
-    Public Overridable Sub ClearOutput()
+    Public Overridable Sub ClearOutput() Implements IConsoleControl.ClearOutput
         richTextBoxConsole.Clear()
         inputStart = 0
     End Sub
@@ -639,7 +703,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <paramname="input">The input.</param>
     ''' <paramname="color">The color.</param>
     ''' <paramname="echo">if set to <c>true</c> echo the input.</param>
-    Public Overridable Sub WriteInput(input As String, color As Color, echo As Boolean)
+    Public Overridable Sub WriteInput(input As String, color As Color, echo As Boolean) Implements IConsoleControl.WriteInput
         Invoke(Sub()
                    '  Are we echoing?
                    If echo Then
@@ -667,7 +731,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' a Connect() call). It does not change the behaviour of the existing
     ''' file-name based overloads used by the local console.
     ''' </summary>
-    Public Overridable Sub StartProcess()
+    Public Overridable Sub StartProcess() Implements IConsoleControl.StartProcess
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
             WriteOutput("Starting session..." & Environment.NewLine, Color.FromArgb(255, 0, 255, 0))
@@ -687,7 +751,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' </summary>
     ''' <paramname="fileName">Name of the file.</param>
     ''' <paramname="arguments">The arguments.</param>
-    Public Sub StartProcess(fileName As String, arguments As String)
+    Public Sub StartProcess(fileName As String, arguments As String) Implements IConsoleControl.StartProcess
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
             WriteOutput("Preparing to run " & fileName, Color.FromArgb(255, 0, 255, 0))
@@ -740,7 +804,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Stops the process.
     ''' </summary>
-    Public Sub StopProcess()
+    Public Sub StopProcess() Implements IConsoleControl.StopProcess
         '  Stop the back-end via the (possibly overridden) contract.
         Call m_console.StopProcess()
     End Sub
