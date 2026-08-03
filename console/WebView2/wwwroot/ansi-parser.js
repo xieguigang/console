@@ -472,7 +472,6 @@
 
     AnsiParser.prototype.applySgr = function (params) {
         var screen = this.screen;
-        var attrs = screen.attrs;
 
         if (params.length === 0) {
             screen.resetAttrs();
@@ -482,6 +481,13 @@
         var i = 0;
         while (i < params.length) {
             var code = params[i];
+
+            /*
+                Re-read on every iteration: resetAttrs() installs a fresh object,
+                so a cached reference would leave later codes in the same run
+                (e.g. the common "\x1b[0;31m") mutating an orphaned copy.
+            */
+            var attrs = screen.attrs;
 
             if (code === 0) {
                 screen.resetAttrs();

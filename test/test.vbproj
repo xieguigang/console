@@ -7,7 +7,7 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>True</UseWindowsForms>
     <UseWPF>True</UseWPF>
-    <StartupObject>test.Form2</StartupObject>
+    <StartupObject>test.Form1</StartupObject>
 </PropertyGroup>
 
   <ItemGroup>
