@@ -66,8 +66,8 @@ Namespace Win32
         ''' <summary>
         ''' Runs a process.
         ''' </summary>
-        ''' <paramname="fileName">Name of the file.</param>
-        ''' <paramname="arguments">The arguments.</param>
+        ''' <param name="fileName">Name of the file.</param>
+        ''' <param name="arguments">The arguments.</param>
         Public Overloads Sub StartProcess(fileName As String, arguments As String)
             '  Create the process start info.
             StartProcess(New ProcessStartInfo(fileName, arguments))
@@ -76,7 +76,7 @@ Namespace Win32
         ''' <summary>
         ''' Runs a process.
         ''' </summary>
-        ''' <paramname="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
+        ''' <param name="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
         Public Overloads Sub StartProcess(processStartInfo As ProcessStartInfo)
             '  Set the options.
             processStartInfo.UseShellExecute = False
@@ -136,8 +136,8 @@ Namespace Win32
         ''' <summary>
         ''' Handles the Exited event of the currentProcess control.
         ''' </summary>
-        ''' <paramname="sender">The source of the event.</param>
-        ''' <paramname="e">The <seecref="System.EventArgs"/> instance containing the event data.</param>
+        ''' <param name="sender">The source of the event.</param>
+        ''' <param name="e">The <seecref="System.EventArgs"/> instance containing the event data.</param>
         Private Sub currentProcess_Exited(sender As Object, e As EventArgs) Handles proc.Exited
             Dim exitCode As Integer = Process.ExitCode
 
@@ -160,7 +160,7 @@ Namespace Win32
         ''' <summary>
         ''' Writes the input.
         ''' </summary>
-        ''' <paramname="input">The input.</param>
+        ''' <param name="input">The input.</param>
         Public Overrides Sub WriteInput(input As String)
             If IsProcessRunning Then
                 inputWriter.WriteLine(input)
@@ -187,7 +187,7 @@ Namespace Win32
         End Sub
 
         ''' <summary>Releases unmanaged and - optionally - managed resources.</summary>
-        ''' <paramname="native">
+        ''' <param name="native">
         '''   <c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         Protected Overrides Sub Dispose(native As Boolean)
             Call MyBase.Dispose(native)

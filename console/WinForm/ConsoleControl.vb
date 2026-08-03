@@ -309,8 +309,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Handles the OnProcessError event of the processInterace control.
     ''' </summary>
-    ''' <paramname="sender">The source of the event.</param>
-    ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessError
         '  Write the output, in red
         WriteOutput(args.Content, Color.Red)
@@ -322,8 +322,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Handles the OnProcessOutput event of the processInterace control.
     ''' </summary>
-    ''' <paramname="sender">The source of the event.</param>
-    ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessOutput
         '  若后端声明 ANSI（True），或文本实际含有 ESC 转义字符，则走 ANSI 渲染路径；
         '  否则按纯文本输出（白字）。降级判断可兼容未声明 ANSI 却输出了转义码的后端。
@@ -340,8 +340,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Handles the OnProcessInput event of the processInterace control.
     ''' </summary>
-    ''' <paramname="sender">The source of the event.</param>
-    ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessInput
 
     End Sub
@@ -351,8 +351,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Handles the OnProcessExit event of the processInterace control.
     ''' </summary>
-    ''' <paramname="sender">The source of the event.</param>
-    ''' <paramname="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessExit
         '  Are we showing diagnostics?
         If ShowDiagnostics AndAlso TypeOf ProcessInterface Is ProcessInterface Then
@@ -385,8 +385,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Handles the KeyDown event of the richTextBoxConsole control.
     ''' </summary>
-    ''' <paramname="sender">The source of the event.</param>
-    ''' <paramname="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
+    ''' <param name="sender">The source of the event.</param>
+    ''' <param name="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
     Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs) Handles richTextBoxConsole.KeyDown
         '  Up/Down history navigation. Only when input is enabled, an input line exists and
         '  the caret is inside the input zone (so that scrolling in the read-only history
@@ -615,8 +615,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Writes the output to the console control.
     ''' </summary>
-    ''' <paramname="output">The output.</param>
-    ''' <paramname="color">The color.</param>
+    ''' <param name="output">The output.</param>
+    ''' <param name="color">The color.</param>
     Public Overridable Sub WriteOutput(output As String, color As Color) Implements IConsoleControl.WriteOutput
         If lastInput.StringEmpty = False AndAlso (Equals(output, lastInput) OrElse Equals(output.Replace(vbCrLf, ""), lastInput)) Then
             Return
@@ -646,7 +646,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 通过内部缓冲拼接被分片到达、尚未结束的转义序列（SSH 分包常见），
     ''' 仅在序列完整时才渲染，避免序列被截断导致渲染错乱。
     ''' </summary>
-    ''' <paramname="ansiText">可能包含 ANSI 转义序列的文本</param>
+    ''' <param name="ansiText">可能包含 ANSI 转义序列的文本</param>
     Public Overridable Sub WriteAnsiEscape(ansiText As String) Implements IConsoleControl.WriteAnsiEscape
         If ansiText Is Nothing Then Return
         If Not IsHandleCreated Then
@@ -700,9 +700,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Writes the input to the console control.
     ''' </summary>
-    ''' <paramname="input">The input.</param>
-    ''' <paramname="color">The color.</param>
-    ''' <paramname="echo">if set to <c>true</c> echo the input.</param>
+    ''' <param name="input">The input.</param>
+    ''' <param name="color">The color.</param>
+    ''' <param name="echo">if set to <c>true</c> echo the input.</param>
     Public Overridable Sub WriteInput(input As String, color As Color, echo As Boolean) Implements IConsoleControl.WriteInput
         Invoke(Sub()
                    '  Are we echoing?
@@ -749,8 +749,8 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Runs a process.
     ''' </summary>
-    ''' <paramname="fileName">Name of the file.</param>
-    ''' <paramname="arguments">The arguments.</param>
+    ''' <param name="fileName">Name of the file.</param>
+    ''' <param name="arguments">The arguments.</param>
     Public Sub StartProcess(fileName As String, arguments As String) Implements IConsoleControl.StartProcess
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
@@ -778,7 +778,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Runs a process.
     ''' </summary>
-    ''' <paramname="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
+    ''' <param name="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
     Public Sub StartProcess(processStartInfo As ProcessStartInfo)
         '  Are we showing diagnostics?
         If ShowDiagnostics Then
@@ -812,7 +812,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Fires the console output event.
     ''' </summary>
-    ''' <paramname="content">The content.</param>
+    ''' <param name="content">The content.</param>
     Private Sub FireConsoleOutputEvent(content As String)
         '  Get the event.
         RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(content))
@@ -821,7 +821,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Fires the console input event.
     ''' </summary>
-    ''' <paramname="content">The content.</param>
+    ''' <param name="content">The content.</param>
     Private Sub FireConsoleInputEvent(content As String)
         '  Get the event.
         RaiseEvent OnConsoleInput(Me, New ConsoleEventArgs(content))

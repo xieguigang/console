@@ -95,7 +95,7 @@ Namespace WebView2
             End If
 
             '  Embedded resource names replace path separators with dots.
-            Dim resourceName As String = prefix & fileName.Replace("/"c, "."c)
+            Dim resourceName As String = prefix & fileName.Replace("/"c, "."c).Replace("\"c, "."c)
 
             Using stream As Stream = AssetAssembly.GetManifestResourceStream(resourceName)
                 If stream Is Nothing Then

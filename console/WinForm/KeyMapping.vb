@@ -61,12 +61,12 @@ Public Class KeyMapping
     ''' <summary>
     ''' Initializes a new instance of the <seecref="KeyMapping"/> class.
     ''' </summary>
-    ''' <paramname="control">if set to <c>true</c> [control].</param>
-    ''' <paramname="alt">if set to <c>true</c> [alt].</param>
-    ''' <paramname="shift">if set to <c>true</c> [shift].</param>
-    ''' <paramname="keyCode">The key code.</param>
-    ''' <paramname="sendKeysMapping">The send keys mapping.</param>
-    ''' <paramname="streamMapping">The stream mapping.</param>
+    ''' <param name="control">if set to <c>true</c> [control].</param>
+    ''' <param name="alt">if set to <c>true</c> [alt].</param>
+    ''' <param name="shift">if set to <c>true</c> [shift].</param>
+    ''' <param name="keyCode">The key code.</param>
+    ''' <param name="sendKeysMapping">The send keys mapping.</param>
+    ''' <param name="streamMapping">The stream mapping.</param>
     Public Sub New(control As Boolean, alt As Boolean, shift As Boolean, keyCode As Keys, sendKeysMapping As String, streamMapping As String)
         '  Set the member variables.
         IsControlPressed = control

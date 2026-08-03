@@ -17,7 +17,7 @@ Public Class ConsoleEventArgs : Inherits EventArgs
     ''' <summary>
     ''' Initializes a new instance of the <seecref="ConsoleEventArgs"/> class.
     ''' </summary>
-    ''' <paramname="content">The content.</param>
+    ''' <param name="content">The content.</param>
     Public Sub New(content As String)
         '  Set the content.
         Me.Content = content

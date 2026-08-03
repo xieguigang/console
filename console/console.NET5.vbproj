@@ -92,7 +92,15 @@
     to deploy the DLL.
   -->
   <ItemGroup>
-    <EmbeddedResource Include="WebView2\wwwroot\**\*" />
+    <!--
+      LogicalName is set explicitly because the default manifest name drops the
+      folder segments, which would let a wwwroot asset collide with any other
+      embedded file of the same name. WebViewConsoleHost resolves assets against
+      this exact prefix.
+    -->
+    <EmbeddedResource Include="WebView2\wwwroot\**\*">
+      <LogicalName>$(RootNamespace).WebView2.wwwroot.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

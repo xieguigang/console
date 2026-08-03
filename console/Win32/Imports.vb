@@ -7,8 +7,8 @@ Namespace Win32
         ''' <summary>
         ''' Sends a specified signal to a console process group that shares the console associated with the calling process.
         ''' </summary>
-        ''' <paramname="dwCtrlEvent">The type of signal to be generated.</param>
-        ''' <paramname="dwProcessGroupId">The identifier of the process group to receive the signal. A process group is 
+        ''' <param name="dwCtrlEvent">The type of signal to be generated.</param>
+        ''' <param name="dwProcessGroupId">The identifier of the process group to receive the signal. A process group is 
         ''' created when the CREATE_NEW_PROCESS_GROUP flag is specified in a call to the CreateProcess function. The process 
         ''' identifier of the new process is also the process group identifier of a new process group. The process group 
         ''' includes all processes that are descendants of the root process. Only those processes in the group that share 

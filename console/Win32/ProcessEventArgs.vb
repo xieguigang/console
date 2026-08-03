@@ -33,8 +33,8 @@
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
         ''' </summary>
-        ''' <paramname="content">The content.</param>
-        ''' <paramname="ansi">The content contains ANSI escape codes.</param>
+        ''' <param name="content">The content.</param>
+        ''' <param name="ansi">The content contains ANSI escape codes.</param>
         Public Sub New(content As String, ansi As Boolean)
             '  Set the content and code.
             Me.Content = content
@@ -44,7 +44,7 @@
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
         ''' </summary>
-        ''' <paramname="code">The code.</param>
+        ''' <param name="code">The code.</param>
         Public Sub New(code As Integer)
             '  Set the content and code.
             Me.Code = code
@@ -53,8 +53,8 @@
         ''' <summary>
         ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
         ''' </summary>
-        ''' <paramname="content">The content.</param>
-        ''' <paramname="code">The code.</param>
+        ''' <param name="content">The content.</param>
+        ''' <param name="code">The code.</param>
         Public Sub New(content As String, code As Integer)
             '  Set the content and code.
             Me.Content = content
