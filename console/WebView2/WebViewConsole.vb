@@ -206,10 +206,18 @@ Partial Public Class WebViewConsole : Inherits UserControl
         End Get
         Set(value As Boolean)
             '  An explicit assignment wins over whatever the back-end asks for;
-            '  see m_keyForwardingExplicit.
-            m_keyForwardingExplicit = True
-            m_sendKeyboardCommandsToProcess = value
-            PushConfig()
+            '  see m_keyForwardingExplicit. A write that does not change the value
+            '  is deliberately not treated as an override: the Windows Forms
+            '  designer serialises every property it knows about, so
+            '  InitializeComponent replays "SendKeyboardCommandsToProcess = False"
+            '  on construction. Latching on that would pin the terminal to
+            '  line-edit mode for the rest of the session and stop SSH (which asks
+            '  for Raw) from ever getting Tab, Ctrl-C or the arrow keys.
+            If value <> m_sendKeyboardCommandsToProcess Then
+                m_keyForwardingExplicit = True
+                m_sendKeyboardCommandsToProcess = value
+                PushConfig()
+            End If
         End Set
     End Property
 
