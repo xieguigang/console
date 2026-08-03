@@ -1,0 +1,203 @@
+/*
+    Terminal styling.
+
+    The host overrides --term-font, --term-size, --term-fg and --term-bg at
+    runtime from the WinForms Font / ForeColor / BackColor properties, so the
+    values here are only the black-on-white-text defaults that match
+    AnsiEscapeRenderer.AnsiTerminalState.
+*/
+:root {
+    --term-font: Consolas, "Cascadia Mono", "Courier New", monospace;
+    --term-size: 12px;
+    --term-line-height: 1.2;
+    --term-fg: #ffffff;
+    --term-bg: #000000;
+    --term-selection: rgba(80, 140, 255, 0.45);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--term-bg);
+    color: var(--term-fg);
+}
+
+body {
+    font-family: var(--term-font);
+    font-size: var(--term-size);
+    line-height: var(--term-line-height);
+    /* Disable the browser's own text-size inflation so cell metrics stay exact. */
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+}
+
+#viewport {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Anchoring would fight our own auto-scroll bookkeeping. */
+    overflow-anchor: none;
+}
+
+#screen {
+    /*
+        `pre` preserves the runs of spaces the grid emits for empty cells, which
+        is what keeps column alignment intact for full-screen TUI programs.
+    */
+    white-space: pre;
+    /* Prevent ligatures / kerning from making glyphs drift out of their cell. */
+    font-variant-ligatures: none;
+    font-kerning: none;
+    font-feature-settings: "liga" 0, "clig" 0, "calt" 0;
+    padding: 0;
+    margin: 0;
+}
+
+.row {
+    /*
+        A fixed pixel height (set by the renderer from the measured cell size)
+        avoids sub-pixel accumulation that would otherwise desynchronise the
+        row count from what the host reported to the pty.
+    */
+    white-space: pre;
+    min-height: 1em;
+}
+
+/* ---- SGR attribute styling ---- */
+
+.b {
+    font-weight: bold;
+}
+
+.i {
+    font-style: italic;
+}
+
+.u {
+    text-decoration: underline;
+}
+
+.s {
+    text-decoration: line-through;
+}
+
+.u.s {
+    text-decoration: underline line-through;
+}
+
+.d {
+    opacity: 0.6;
+}
+
+.h {
+    /* SGR 8 (conceal): keep the cell occupying space but hide the glyph. */
+    visibility: hidden;
+}
+
+/* ---- Cursor ---- */
+
+.cursor {
+    background-color: var(--term-fg);
+    color: var(--term-bg);
+}
+
+body.focused .cursor.blink {
+    animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+    0%, 100% {
+        background-color: var(--term-fg);
+        color: var(--term-bg);
+    }
+
+    50% {
+        background-color: transparent;
+        color: var(--term-fg);
+    }
+}
+
+/* ---- Selection ---- */
+
+::selection {
+    background: var(--term-selection);
+}
+
+/* ---- Off-screen helpers ---- */
+
+#measure {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    white-space: pre;
+    font-family: var(--term-font);
+    font-size: var(--term-size);
+    line-height: var(--term-line-height);
+    font-variant-ligatures: none;
+    font-kerning: none;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+#keyboard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    outline: 0;
+    opacity: 0;
+    resize: none;
+    overflow: hidden;
+    /* Keep it in the layer so focus works, but never let it paint. */
+    color: transparent;
+    background: transparent;
+    caret-color: transparent;
+    z-index: -1;
+}
+
+/* ---- Dark scrollbar ---- */
+
+#viewport::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+#viewport::-webkit-scrollbar-track {
+    background: var(--term-bg);
+}
+
+#viewport::-webkit-scrollbar-thumb {
+    background: #3a3a3a;
+    border: 2px solid var(--term-bg);
+    border-radius: 6px;
+}
+
+#viewport::-webkit-scrollbar-thumb:hover {
+    background: #555555;
+}
+
+/* ---- Fatal error banner (WebView2 runtime / asset failures) ---- */
+
+#fatal {
+    position: absolute;
+    inset: 0;
+    padding: 12px;
+    white-space: pre-wrap;
+    color: #ff6b6b;
+    background: var(--term-bg);
+    font-family: var(--term-font);
+    font-size: var(--term-size);
+}

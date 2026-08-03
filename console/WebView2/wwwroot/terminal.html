@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Terminal</title>
+    <link rel="stylesheet" href="terminal.css" />
+</head>
+<body>
+    <!--
+        #viewport is the scrolling container; #screen holds one <div class="row">
+        per terminal line. #measure is an off-screen probe used to derive the
+        exact cell metrics of the current font so the host can size the pty.
+    -->
+    <div id="viewport">
+        <div id="screen" role="log" aria-live="polite"></div>
+    </div>
+
+    <div id="measure" aria-hidden="true">0000000000</div>
+
+    <!--
+        A zero-size, always-focused textarea. Keeping a real editable element in
+        the DOM is what makes IME composition and clipboard paste work; all of
+        its visible output is suppressed by CSS.
+    -->
+    <textarea id="keyboard"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-hidden="true"></textarea>
+
+    <script src="ansi-parser.js"></script>
+    <script src="terminal-screen.js"></script>
+    <script src="terminal-renderer.js"></script>
+    <script src="terminal-input.js"></script>
+    <script src="terminal-app.js"></script>
+</body>
+</html>
