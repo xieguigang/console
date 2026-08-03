@@ -7,10 +7,12 @@
     <Configurations>Debug;Release;Rsharp_app_release;mzkit_win32;CellaLAB-Desktop</Configurations>
     <AssemblyName>Microsoft.VisualBasic.Windows.Forms.Console</AssemblyName>
     <RootNamespace>Microsoft.VisualBasic.Windows.Forms</RootNamespace>
-    <MyType>WindowsFormsWithCustomSubMain</MyType>
-    <StartupObject>Microsoft.VisualBasic.Windows.Forms.</StartupObject>
+    <MyType>WindowsForms</MyType>
+    <StartupObject>Microsoft.VisualBasic.Windows.Forms.My.MyApplication</StartupObject>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
+    <OutputType>Library</OutputType>
+    <UseWPF>True</UseWPF>
   </PropertyGroup>
 
 
@@ -33,6 +35,11 @@
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\GCModeller\src\runtime\sciBASIC#\Microsoft.VisualBasic.Core\src\Core.vbproj" />
   </ItemGroup>
@@ -41,6 +48,10 @@
     <None Update="My Project\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{94e38dff-614b-4cbd-b67c-f211bb35ce8b}" />
   </ItemGroup>
 
 </Project>
