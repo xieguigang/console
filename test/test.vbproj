@@ -19,4 +19,10 @@
     <ProjectReference Include="..\console\console.NET5.vbproj" />
     <ProjectReference Include="..\SShClient\SShClient.vbproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="MainForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
 </Project>

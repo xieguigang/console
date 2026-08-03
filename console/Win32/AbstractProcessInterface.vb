@@ -5,6 +5,43 @@ Imports System.Threading
 
 Namespace Win32
 
+    ''' <summary>
+    ''' Describes how a console front-end should feed keystrokes to a back-end.
+    ''' </summary>
+    Public Enum ConsoleInputMode
+        ''' <summary>
+        ''' Line editing: the renderer echoes locally, handles in-line editing and
+        ''' history, and only submits a whole line once Enter is pressed. Suitable
+        ''' for back-ends that have no PTY of their own (a local command shell).
+        ''' </summary>
+        LineEdit = 0
+
+        ''' <summary>
+        ''' Raw pass-through: every keystroke is forwarded to the back-end as it
+        ''' happens. Suitable for back-ends that drive a real PTY (an SSH shell).
+        ''' </summary>
+        Raw = 1
+    End Enum
+
+    ''' <summary>
+    ''' Implemented by back-ends that need to know what the user has typed but not
+    ''' yet submitted, so they can act on it when a raw key arrives - tab
+    ''' completion being the motivating case.
+    ''' </summary>
+    ''' <remarks>
+    ''' Optional: the console probes for it with <c>TryCast</c>, so back-ends that
+    ''' do not implement it are unaffected.
+    ''' </remarks>
+    Public Interface IEditableInputLine
+
+        ''' <summary>
+        ''' Reports the renderer's current line buffer and caret offset, pushed
+        ''' immediately before the raw keystroke that triggered it.
+        ''' </summary>
+        Sub SetEditorState(line As String, cursorPosition As Integer)
+
+    End Interface
+
     Public MustInherit Class AbstractProcessInterface : Implements IDisposable
 
         ''' <summary>
@@ -49,6 +86,14 @@ Namespace Win32
 
         Public Event OnProcessExit(sender As Object, args As ProcessEventArgs)
 
+        ''' <summary>
+        ''' Raised when the back-end wants the front-end's editable input line to
+        ''' be replaced wholesale - for example after tab completion rewrote it.
+        ''' Only meaningful while the console runs in
+        ''' <see cref="ConsoleInputMode.LineEdit"/>.
+        ''' </summary>
+        Public Event OnSetInputLine(sender As Object, args As ProcessEventArgs)
+
         Protected ansi As Boolean = False
 
         ''' <summary>
@@ -59,6 +104,19 @@ Namespace Win32
         Public Overridable ReadOnly Property IsProcessRunning As Boolean
             Get
                 Return False
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The input mode this back-end expects the hosting console to use.
+        ''' Defaults to <see cref="ConsoleInputMode.LineEdit"/>, which is the safe
+        ''' choice for back-ends without a PTY; override it to
+        ''' <see cref="ConsoleInputMode.Raw"/> when the back-end wants keystrokes
+        ''' forwarded verbatim.
+        ''' </summary>
+        Public Overridable ReadOnly Property PreferredInputMode As ConsoleInputMode
+            Get
+                Return ConsoleInputMode.LineEdit
             End Get
         End Property
 
@@ -90,6 +148,14 @@ Namespace Win32
         ''' </summary>
         Protected Sub RaiseErrorEvent(text As String)
             RaiseEvent OnProcessError(Me, New ProcessEventArgs(text))
+        End Sub
+
+        ''' <summary>
+        ''' Raises the <see cref="OnSetInputLine"/> event, asking the front-end to
+        ''' replace whatever the user has typed so far with <paramref name="text"/>.
+        ''' </summary>
+        Protected Sub RaiseSetInputLineEvent(text As String)
+            RaiseEvent OnSetInputLine(Me, New ProcessEventArgs(If(text, String.Empty)))
         End Sub
 
         ''' <summary>

@@ -44,6 +44,17 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
     End Property
 
     ''' <summary>
+    ''' The remote end runs a real PTY, so it owns echo, line editing and control
+    ''' characters; every keystroke has to reach it unaltered for interactive
+    ''' programs and Ctrl+C to work.
+    ''' </summary>
+    Public Overrides ReadOnly Property PreferredInputMode As ConsoleInputMode
+        Get
+            Return ConsoleInputMode.Raw
+        End Get
+    End Property
+
+    ''' <summary>
     ''' Builds a <see cref="SSH.ConnectionInfo"/> from the configured options.
     ''' Supports password authentication, private-key authentication and an
     ''' optional HTTP proxy, mirroring the reference implementation.
@@ -213,13 +224,56 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
     End Sub
 
     ''' <summary>
-    ''' Records the requested terminal size. The SSH.NET 2025.1.0 ShellStream no
-    ''' longer exposes a runtime resize API, so the reported size is applied on the
-    ''' next connection. (The initial size is set in <see cref="StartProcess"/>.)
+    ''' Applies a new terminal size to the remote session.
+    ''' <para>
+    ''' The size is first stored in <see cref="Columns"/>/<see cref="Rows"/> so a
+    ''' later reconnect recreates the shell at the current size, then a
+    ''' <c>window-change</c> request is sent over the live channel via
+    ''' <see cref="SSH.ShellStream.ChangeWindowSize"/>. That request makes the
+    ''' remote PTY deliver SIGWINCH to its foreground process group, which is what
+    ''' full-screen programs (htop, btop, vim, ...) need in order to re-layout.
+    ''' Without it the remote side keeps rendering at the size negotiated when the
+    ''' channel was opened, so the output no longer lines up with the local grid.
+    ''' </para>
+    ''' <para>
+    ''' The pixel dimensions are passed as 0, matching how the shell stream is
+    ''' created in <see cref="StartProcess"/>: the character cell grid is
+    ''' authoritative and the server derives the pixel size from it.
+    ''' </para>
     ''' </summary>
+    ''' <param name="columns">The new terminal width in character cells.</param>
+    ''' <param name="rows">The new terminal height in character cells.</param>
     Public Sub ResizeTerminal(columns As UInteger, rows As UInteger)
-        columns = columns
-        rows = rows
+        If columns <= 0UI OrElse rows <= 0UI Then
+            Return
+        End If
+
+        '  Remember the size even when no session is live, so a reconnect starts
+        '  out at the size the console currently shows.
+        Me.Columns = columns
+        Me.Rows = rows
+
+        '  Take a local reference under the lock: the background reader may run
+        '  StopProcess() on EOF and null out shell between a check and its use.
+        Dim target As SSH.ShellStream = Nothing
+
+        SyncLock sync
+            If shell Is Nothing OrElse client Is Nothing OrElse Not client.IsConnected Then
+                Return
+            End If
+
+            target = shell
+        End SyncLock
+
+        Try
+            target.ChangeWindowSize(columns, rows, 0UI, 0UI)
+        Catch ex As ObjectDisposedException
+            '  The session was torn down while resizing; nothing to report.
+        Catch ex As Exception
+            '  A failed resize is not fatal, and this runs on the UI thread while
+            '  the user drags the window border, so the exception must not escape.
+            RaiseErrorEvent("SSH resize error: " & ex.Message & Environment.NewLine)
+        End Try
     End Sub
 
     Public Overrides Sub StopProcess()

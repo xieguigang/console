@@ -1,4 +1,5 @@
 Imports System.Windows.Forms
+Imports Microsoft.VisualBasic.Windows.Forms.SshClient
 
 ''' <summary>
 ''' A minimal demo host for <see cref="SshWinFormConsole"/>: a small connection

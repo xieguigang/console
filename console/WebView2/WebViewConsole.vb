@@ -93,6 +93,30 @@ Partial Public Class WebViewConsole : Inherits UserControl
     Private m_initialisationError As String
 
     ''' <summary>
+    ''' Set when <see cref="StartProcess"/> is called before the renderer has
+    ''' signalled readiness. The start is then replayed from
+    ''' <see cref="HandleRendererReady"/> so the prompt is only emitted once the
+    ''' configuration and the keyboard focus are both in place.
+    ''' </summary>
+    Private m_pendingStart As Boolean
+
+    ''' <summary>
+    ''' Set when a focus request arrives before the renderer is live; replayed on
+    ''' readiness.
+    ''' </summary>
+    Private m_pendingFocus As Boolean
+
+    ''' <summary>
+    ''' <c>True</c> once a caller has assigned
+    ''' <see cref="SendKeyboardCommandsToProcess"/> explicitly. While it is
+    ''' <c>False</c> the control derives the value from the back-end's
+    ''' <see cref="AbstractProcessInterface.PreferredInputMode"/>, which is what
+    ''' makes local shells and SSH sessions behave correctly without the host form
+    ''' having to configure anything.
+    ''' </summary>
+    Private m_keyForwardingExplicit As Boolean
+
+    ''' <summary>
     ''' Occurs when console output is produced.
     ''' </summary>
     Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs) Implements IConsoleControl.OnConsoleOutput
@@ -181,6 +205,9 @@ Partial Public Class WebViewConsole : Inherits UserControl
             Return m_sendKeyboardCommandsToProcess
         End Get
         Set(value As Boolean)
+            '  An explicit assignment wins over whatever the back-end asks for;
+            '  see m_keyForwardingExplicit.
+            m_keyForwardingExplicit = True
             m_sendKeyboardCommandsToProcess = value
             PushConfig()
         End Set
@@ -502,7 +529,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
                 HandleInput(message.Data)
 
             Case InboundMessageKind.Raw
-                HandleRaw(message.Data)
+                HandleRaw(message)
 
             Case InboundMessageKind.Resize
                 HandleResize(message.Columns, message.Rows)
@@ -535,6 +562,20 @@ Partial Public Class WebViewConsole : Inherits UserControl
         m_flushTimer.Start()
         Flush()
 
+        '  A start requested before the browser came up was deferred so that the
+        '  back-end's first output (typically a prompt) lands after the renderer
+        '  has been configured. Consume the latch exactly once: a page reload
+        '  re-raises "ready" and must not restart the session.
+        If m_pendingStart Then
+            m_pendingStart = False
+            StartConsoleCore()
+        End If
+
+        '  Without this the WebView never takes the keyboard focus on its own, so
+        '  keystrokes go nowhere and the terminal looks dead even though the
+        '  prompt rendered correctly.
+        FocusTerminal()
+
         RaiseEvent TerminalResized(m_columns, m_rows)
     End Sub
 
@@ -552,16 +593,41 @@ Partial Public Class WebViewConsole : Inherits UserControl
         RaiseEvent OnConsoleInput(Me, New ConsoleEventArgs(data))
     End Sub
 
-    Private Sub HandleRaw(data As String)
-        If m_console Is Nothing OrElse String.IsNullOrEmpty(data) Then
+    Private Sub HandleRaw(message As InboundMessage)
+        If m_console Is Nothing OrElse String.IsNullOrEmpty(message.Data) Then
             Return
         End If
 
+        '  Hand the renderer's uncommitted line to the back-end before the key
+        '  itself, so back-ends that implement tab completion can see what the
+        '  user has typed. Back-ends that do not care simply ignore it.
+        Dim editable As IEditableInputLine = TryCast(m_console, IEditableInputLine)
+
+        If editable IsNot Nothing Then
+            Try
+                editable.SetEditorState(If(message.Line, String.Empty), message.CursorPosition)
+            Catch ex As Exception
+                WriteOutput(ex.Message & Environment.NewLine, Color.Red)
+            End Try
+        End If
+
         Try
-            m_console.WriteRaw(data)
+            m_console.WriteRaw(message.Data)
         Catch ex As Exception
             WriteOutput(ex.Message & Environment.NewLine, Color.Red)
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' Relays a back-end's request to rewrite the renderer's editable line.
+    ''' </summary>
+    Private Sub HandleSetInputLine(sender As Object, args As ProcessEventArgs) Handles m_console.OnSetInputLine
+        If InvokeRequired Then
+            BeginInvoke(New Action(Of Object, ProcessEventArgs)(AddressOf HandleSetInputLine), sender, args)
+            Return
+        End If
+
+        PostToRenderer(TerminalMessage.SetLine(If(args?.Content, String.Empty)))
     End Sub
 
     Private Sub HandleResize(columns As Integer, rows As Integer)
@@ -694,7 +760,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
     ''' Sends raw bytes to the process with no line terminator appended.
     ''' </summary>
     Public Overridable Sub WriteRaw(raw As String) Implements IConsoleControl.WriteRaw
-        HandleRaw(raw)
+        HandleRaw(New InboundMessage With {.Kind = InboundMessageKind.Raw, .Data = raw})
     End Sub
 
     ''' <summary>
@@ -755,6 +821,34 @@ Partial Public Class WebViewConsole : Inherits UserControl
     Public Sub SetConsoleCore([interface] As AbstractProcessInterface) Implements IConsoleControl.SetConsoleCore
         '  Assigning a WithEvents field rewires the Handles clauses automatically.
         m_console = [interface]
+
+        ApplyBackEndInputMode()
+    End Sub
+
+    ''' <summary>
+    ''' Aligns the renderer's input behaviour with what the current back-end asks
+    ''' for, unless the host has overridden it explicitly.
+    ''' </summary>
+    ''' <remarks>
+    ''' A local command shell has no PTY: it needs the renderer to echo, edit and
+    ''' submit whole lines. An SSH shell does have one and wants every keystroke
+    ''' as it happens. Deriving the mode from the back-end means swapping one for
+    ''' the other - which the SSH client does the moment the user types
+    ''' <c>ssh ...</c> - keeps working without the host form intervening.
+    ''' </remarks>
+    Private Sub ApplyBackEndInputMode()
+        If m_keyForwardingExplicit OrElse m_console Is Nothing Then
+            Return
+        End If
+
+        Dim forward As Boolean = m_console.PreferredInputMode = ConsoleInputMode.Raw
+
+        If forward = m_sendKeyboardCommandsToProcess Then
+            Return
+        End If
+
+        m_sendKeyboardCommandsToProcess = forward
+        PushConfig()
     End Sub
 
     Public Function GetInterface() As AbstractProcessInterface Implements IConsoleControl.GetInterface
@@ -769,7 +863,36 @@ Partial Public Class WebViewConsole : Inherits UserControl
             WriteOutput("Starting session..." & Environment.NewLine, Color.FromArgb(255, 0, 255, 0))
         End If
 
-        m_console.StartProcess()
+        '  Hosts routinely start the session from Form.Load, long before WebView2
+        '  has finished booting. Defer so the prompt is written into a renderer
+        '  that is already configured and focused rather than into the pending
+        '  buffer.
+        If Not m_rendererReady Then
+            m_pendingStart = True
+            Return
+        End If
+
+        StartConsoleCore()
+    End Sub
+
+    ''' <summary>
+    ''' Starts the bound back-end and hands the keyboard to the terminal.
+    ''' </summary>
+    Private Sub StartConsoleCore()
+        If m_console Is Nothing Then
+            Return
+        End If
+
+        ApplyBackEndInputMode()
+
+        Try
+            m_console.StartProcess()
+        Catch ex As Exception
+            WriteOutput(ex.Message & Environment.NewLine, Color.Red)
+            Return
+        End Try
+
+        FocusTerminal()
     End Sub
 
     ''' <summary>
@@ -861,18 +984,72 @@ Partial Public Class WebViewConsole : Inherits UserControl
 
         '  Focus lands on the UserControl, but the keyboard sink lives inside the
         '  document, so it has to be handed on explicitly.
-        PostToRenderer(TerminalMessage.Focus())
+        FocusTerminal()
     End Sub
 
     ''' <summary>
     ''' Moves keyboard focus into the terminal.
     ''' </summary>
+    ''' <remarks>
+    ''' Three hops are needed and none of them can be skipped: the containing form
+    ''' has to make this control its active one, the WebView2 child has to take the
+    ''' Win32 focus, and the document has to move the caret into its hidden
+    ''' keyboard sink. Miss any of them and keystrokes are silently discarded -
+    ''' output still renders, which makes the terminal look alive while refusing
+    ''' every key.
+    ''' <para>
+    ''' Safe to call at any time: before the renderer answers, the request is
+    ''' latched and replayed from <see cref="HandleRendererReady"/>.
+    ''' </para>
+    ''' </remarks>
     Public Sub FocusTerminal()
+        If IsDisposed OrElse Disposing Then
+            Return
+        End If
+
+        If InvokeRequired Then
+            If IsHandleCreated Then
+                BeginInvoke(New MethodInvoker(AddressOf FocusTerminal))
+            End If
+            Return
+        End If
+
+        If Not m_rendererReady Then
+            '  Nothing to focus yet; HandleRendererReady will do it.
+            m_pendingFocus = True
+            Return
+        End If
+
+        m_pendingFocus = False
+
+        '  Make this control the form's active one, otherwise the WebView child
+        '  never receives WM_SETFOCUS no matter what we do below.
+        Dim form As ContainerControl = TryCast(TopLevelControl, ContainerControl)
+
+        If form IsNot Nothing AndAlso Not ReferenceEquals(form.ActiveControl, Me) Then
+            Try
+                form.ActiveControl = Me
+            Catch
+                '  A container can refuse activation (control not yet parented or
+                '  not selectable); the direct Focus calls below still stand a
+                '  chance, so this is not fatal.
+            End Try
+        End If
+
         If WebView21 IsNot Nothing AndAlso Not WebView21.IsDisposed Then
             WebView21.Focus()
         End If
 
         PostToRenderer(TerminalMessage.Focus())
+    End Sub
+
+    ''' <summary>
+    ''' Keeps the terminal usable when the user clicks the control itself rather
+    ''' than the hosted document.
+    ''' </summary>
+    Protected Overrides Sub OnMouseDown(e As MouseEventArgs)
+        MyBase.OnMouseDown(e)
+        FocusTerminal()
     End Sub
 
 #End Region

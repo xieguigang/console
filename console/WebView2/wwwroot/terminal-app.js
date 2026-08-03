@@ -111,8 +111,15 @@
         onLine: function (line) {
             post({ type: 'input', data: line });
         },
-        onRaw: function (data) {
-            post({ type: 'raw', data: data });
+        onRaw: function (data, line, cursor) {
+            // The pending line travels with the key so the host can implement
+            // completion against what is actually on screen.
+            post({
+                type: 'raw',
+                data: data,
+                line: line || '',
+                cursor: typeof cursor === 'number' ? cursor : 0
+            });
         },
         onEcho: function (text) {
             /*
@@ -174,6 +181,11 @@
 
             case 'focus':
                 input.focus();
+                renderer.setFocused(true);
+                break;
+
+            case 'setLine':
+                input.setLine(message.data || '');
                 break;
 
             default:

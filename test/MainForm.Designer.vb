@@ -1,28 +1,30 @@
+Imports System.Drawing
 Imports System.Windows.Forms
+Imports Microsoft.VisualBasic.Windows.Forms.SshClient
 
 Partial Class MainForm
 
-        Private components As System.ComponentModel.IContainer = Nothing
+    Private components As System.ComponentModel.IContainer = Nothing
 
-        Private HostLabel As Label
-        Private HostTextBox As TextBox
-        Private UserLabel As Label
-        Private UserTextBox As TextBox
-        Private PasswordLabel As Label
-        Private PasswordTextBox As TextBox
-        Private PortLabel As Label
-        Private PortTextBox As TextBox
-        Private WithEvents ConnectButton As Button
-        Private WithEvents DisconnectButton As Button
-        Private ToolStrip As Panel
+    Private HostLabel As Label
+    Private HostTextBox As TextBox
+    Private UserLabel As Label
+    Private UserTextBox As TextBox
+    Private PasswordLabel As Label
+    Private PasswordTextBox As TextBox
+    Private PortLabel As Label
+    Private PortTextBox As TextBox
+    Private WithEvents ConnectButton As Button
+    Private WithEvents DisconnectButton As Button
+    Private ToolStrip As Panel
 
-        Protected Overrides Sub Dispose(disposing As Boolean)
-            If disposing AndAlso components IsNot Nothing Then
-                components.Dispose()
-            End If
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        If disposing AndAlso components IsNot Nothing Then
+            components.Dispose()
+        End If
 
-            MyBase.Dispose(disposing)
-        End Sub
+        MyBase.Dispose(disposing)
+    End Sub
 
     Private Sub InitializeComponent()
         Dim SshConnectionOptions1 As SshConnectionOptions = New SshConnectionOptions()

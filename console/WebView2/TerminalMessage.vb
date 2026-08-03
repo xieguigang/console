@@ -15,6 +15,7 @@ Namespace WebView2
         Clear
         Scrollback
         Focus
+        SetLine
     End Enum
 
     ''' <summary>
@@ -38,6 +39,18 @@ Namespace WebView2
         Public Property Data As String
         Public Property Columns As Integer
         Public Property Rows As Integer
+
+        ''' <summary>
+        ''' The renderer's current (uncommitted) input line. Only populated on
+        ''' <see cref="InboundMessageKind.Raw"/> messages, so that back-ends which
+        ''' implement tab completion can see what the user has typed so far.
+        ''' </summary>
+        Public Property Line As String
+
+        ''' <summary>
+        ''' Caret offset within <see cref="Line"/> when the raw key was pressed.
+        ''' </summary>
+        Public Property CursorPosition As Integer
 
     End Class
 
@@ -153,6 +166,23 @@ Namespace WebView2
         End Function
 
         ''' <summary>
+        ''' Builds a <c>setLine</c> message asking the renderer to replace the
+        ''' current editable input line with <paramref name="text"/> and park the
+        ''' caret at its end. Used by back-ends that rewrite the line themselves,
+        ''' such as tab completion, so the on-screen text and the renderer's line
+        ''' buffer cannot drift apart.
+        ''' </summary>
+        Public Shared Function SetLine(text As String) As String
+            Dim builder As New StringBuilder(If(text, String.Empty).Length + 32)
+
+            builder.Append("{""type"":""setLine"",""data"":")
+            AppendJsonString(builder, If(text, String.Empty))
+            builder.Append("}"c)
+
+            Return builder.ToString()
+        End Function
+
+        ''' <summary>
         ''' Parses a message posted by the renderer. Returns <c>Nothing</c> when the
         ''' payload is not understood, so callers can ignore it safely.
         ''' </summary>
@@ -195,6 +225,18 @@ Namespace WebView2
 
                     If root.TryGetProperty("rows", rowsElement) AndAlso rowsElement.ValueKind = JsonValueKind.Number Then
                         message.Rows = rowsElement.GetInt32()
+                    End If
+
+                    Dim lineElement As JsonElement
+
+                    If root.TryGetProperty("line", lineElement) AndAlso lineElement.ValueKind = JsonValueKind.String Then
+                        message.Line = lineElement.GetString()
+                    End If
+
+                    Dim cursorElement As JsonElement
+
+                    If root.TryGetProperty("cursor", cursorElement) AndAlso cursorElement.ValueKind = JsonValueKind.Number Then
+                        message.CursorPosition = cursorElement.GetInt32()
                     End If
 
                     Return message

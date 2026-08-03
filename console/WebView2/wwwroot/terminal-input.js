@@ -11,9 +11,11 @@
     'use strict';
 
     var ETX = '\x03';
+    var ESC = '\x1b';
 
     // Keys that translate directly into a fixed escape sequence.
     var SPECIAL_KEYS = {
+        Escape: ESC,
         ArrowUp: '\x1b[A',
         ArrowDown: '\x1b[B',
         ArrowRight: '\x1b[C',
@@ -38,6 +40,14 @@
         F12: '\x1b[24~'
     };
 
+    function repeat(text, count) {
+        var out = '';
+        for (var i = 0; i < count; i++) {
+            out += text;
+        }
+        return out;
+    }
+
     function TerminalInput(options) {
         this.element = options.element;
         this.viewport = options.viewport;
@@ -55,10 +65,13 @@
         this.sendKeysToProcess = false;
         this.keyMappings = [];
 
-        // Current (not yet submitted) input line and the history ring.
+        // Current (not yet submitted) input line, the caret offset within it and
+        // the history ring.
         this.buffer = '';
+        this.cursor = 0;
         this.history = [];
         this.historyIndex = 0;
+        this.maxHistory = 500;
 
         this.composing = false;
 
@@ -176,6 +189,25 @@
         document.addEventListener('contextmenu', function (e) {
             e.preventDefault();
         });
+
+        // Last line of defence: if the document is given the focus but it settles
+        // on the body rather than the sink - which is what happens when the host
+        // calls WebView2.Focus() - pull it back, otherwise no key ever reaches
+        // the handlers above and the terminal looks unresponsive.
+        global.addEventListener('focus', function () {
+            if (document.activeElement !== element) {
+                self.focus();
+            }
+        });
+
+        document.addEventListener('mousedown', function () {
+            global.setTimeout(function () {
+                if (document.activeElement === document.body &&
+                    String(global.getSelection()) === '') {
+                    self.focus();
+                }
+            }, 0);
+        });
     };
 
     /**
@@ -223,45 +255,103 @@
             return;
         }
 
+        // Host-declared chords are control signals rather than text, so they are
+        // forwarded in both modes. In line-edit mode the back-end is the only
+        // party that can act on them meaningfully (tab completion needs the
+        // command table, Ctrl+C needs to abandon the pending line), and dropping
+        // them here is what previously made Tab and Ctrl+C dead keys in the
+        // local shell.
         var mapping = this.findMapping(e);
         if (mapping) {
             e.preventDefault();
-            if (this.sendKeysToProcess) {
-                // Mapped chords are control signals: they must arrive verbatim,
-                // with no line terminator appended.
-                this.onRaw(mapping.data);
-                if (mapping.data === ETX) {
-                    this.buffer = '';
-                }
+            this.emitRaw(mapping.data);
+            if (mapping.data === ETX) {
+                this.buffer = '';
+                this.cursor = 0;
             }
             return;
         }
 
         if (e.key === 'Enter') {
             e.preventDefault();
-            this.submit();
+            if (this.sendKeysToProcess) {
+                // The remote PTY assembles lines itself; sending a submitted line
+                // as well would duplicate every command.
+                this.emitRaw('\r');
+            } else {
+                this.submit();
+            }
             return;
         }
 
         if (e.key === 'Backspace') {
             e.preventDefault();
-            if (this.buffer.length > 0) {
-                this.buffer = this.buffer.substring(0, this.buffer.length - 1);
-                this.onEcho('\b \b');
+            if (this.sendKeysToProcess) {
+                this.emitRaw('\x7f');
+            } else {
+                this.deleteBackward();
             }
+            return;
+        }
+
+        if (e.key === 'Delete' && !this.sendKeysToProcess) {
+            e.preventDefault();
+            this.deleteForward();
             return;
         }
 
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault();
-            this.navigateHistory(e.key === 'ArrowUp' ? -1 : 1);
+            if (this.sendKeysToProcess) {
+                this.emitRaw(SPECIAL_KEYS[e.key]);
+            } else {
+                this.navigateHistory(e.key === 'ArrowUp' ? -1 : 1);
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (this.sendKeysToProcess) {
+                this.emitRaw(SPECIAL_KEYS[e.key]);
+            } else {
+                this.moveCursor(e.key === 'ArrowLeft' ? -1 : 1);
+            }
+            return;
+        }
+
+        if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            if (this.sendKeysToProcess) {
+                this.emitRaw(SPECIAL_KEYS[e.key]);
+            } else {
+                this.setCursor(e.key === 'Home' ? 0 : this.buffer.length);
+            }
             return;
         }
 
         if (e.key === 'Tab') {
             e.preventDefault();
-            if (this.sendKeysToProcess) {
-                this.onRaw('\t');
+            // Always forwarded: completion is the back-end's business in both
+            // modes.
+            this.emitRaw('\t');
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            // preventDefault matters here: in a WebView the browser still acts on
+            // Escape (cancelling page load, leaving full screen), and Escape is
+            // not a printable character, so without an explicit branch it reaches
+            // neither the `input` event nor the process and is silently dropped -
+            // which is what stopped vim from leaving insert mode.
+            e.preventDefault();
+            // Forwarded in both modes, like Tab: Escape is a control signal, not
+            // text, and only the back-end can act on it.
+            this.emitRaw(ESC);
+            if (!this.sendKeysToProcess) {
+                // Line-edit mode has no remote reader to interpret the escape, so
+                // give it the local meaning of abandoning the pending input line.
+                this.replaceBuffer('');
             }
             return;
         }
@@ -270,9 +360,7 @@
             var upper = e.key.toUpperCase();
             if (upper >= 'A' && upper <= 'Z') {
                 e.preventDefault();
-                if (this.sendKeysToProcess) {
-                    this.onRaw(String.fromCharCode(upper.charCodeAt(0) - 64));
-                }
+                this.emitRaw(String.fromCharCode(upper.charCodeAt(0) - 64));
                 return;
             }
         }
@@ -281,7 +369,7 @@
         if (special) {
             e.preventDefault();
             if (this.sendKeysToProcess) {
-                this.onRaw(special);
+                this.emitRaw(special);
             }
             return;
         }
@@ -290,8 +378,22 @@
         // keys and IME composition keep working.
     };
 
+    /**
+     * Sends a raw key sequence to the host along with the line being edited, so
+     * back-ends can implement completion without shadowing the renderer's state.
+     */
+    TerminalInput.prototype.emitRaw = function (data) {
+        this.onRaw(data, this.buffer, this.cursor);
+    };
+
     TerminalInput.prototype.typeText = function (text) {
         if (!this.canType() || text.length === 0) {
+            return;
+        }
+
+        // In raw mode the back-end owns the echo, so characters go straight out.
+        if (this.sendKeysToProcess) {
+            this.emitRaw(text.replace(/\n/g, '\r'));
             return;
         }
 
@@ -299,7 +401,7 @@
         for (var i = 0; i < text.length; i++) {
             var code = text.charCodeAt(i);
             if (code === 10 || code === 13) {
-                this.buffer += printable;
+                this.insert(printable);
                 printable = '';
                 this.submit();
                 continue;
@@ -309,10 +411,78 @@
             }
         }
 
-        if (printable.length > 0) {
-            this.buffer += printable;
-            this.onEcho(printable);
+        this.insert(printable);
+    };
+
+    /**
+     * Inserts `text` at the caret and repaints the tail of the line.
+     */
+    TerminalInput.prototype.insert = function (text) {
+        if (!text || text.length === 0) {
+            return;
         }
+
+        var tail = this.buffer.substring(this.cursor);
+
+        this.buffer = this.buffer.substring(0, this.cursor) + text + tail;
+        this.cursor += text.length;
+
+        // Reprint the remainder, then walk the caret back over it so the visible
+        // caret matches this.cursor.
+        this.onEcho(text + tail + repeat('\b', tail.length));
+    };
+
+    /**
+     * Backspace: removes the character before the caret.
+     */
+    TerminalInput.prototype.deleteBackward = function () {
+        if (this.cursor === 0) {
+            return;
+        }
+
+        var tail = this.buffer.substring(this.cursor);
+
+        this.buffer = this.buffer.substring(0, this.cursor - 1) + tail;
+        this.cursor -= 1;
+
+        // Step back over the doomed glyph, redraw the tail, blank the now-stale
+        // trailing cell, then return the caret.
+        this.onEcho('\b' + tail + ' ' + repeat('\b', tail.length + 1));
+    };
+
+    /**
+     * Delete: removes the character under the caret.
+     */
+    TerminalInput.prototype.deleteForward = function () {
+        if (this.cursor >= this.buffer.length) {
+            return;
+        }
+
+        var tail = this.buffer.substring(this.cursor + 1);
+
+        this.buffer = this.buffer.substring(0, this.cursor) + tail;
+
+        this.onEcho(tail + ' ' + repeat('\b', tail.length + 1));
+    };
+
+    TerminalInput.prototype.moveCursor = function (delta) {
+        this.setCursor(this.cursor + delta);
+    };
+
+    TerminalInput.prototype.setCursor = function (position) {
+        var target = Math.max(0, Math.min(this.buffer.length, position));
+
+        if (target === this.cursor) {
+            return;
+        }
+
+        if (target < this.cursor) {
+            this.onEcho(repeat('\b', this.cursor - target));
+        } else {
+            this.onEcho(this.buffer.substring(this.cursor, target));
+        }
+
+        this.cursor = target;
     };
 
     TerminalInput.prototype.paste = function (text) {
@@ -322,7 +492,13 @@
 
     TerminalInput.prototype.submit = function () {
         var line = this.buffer;
+
+        // Park the caret past the tail before breaking the line, otherwise the
+        // remainder of a mid-line submit would be overwritten.
+        this.setCursor(line.length);
+
         this.buffer = '';
+        this.cursor = 0;
 
         this.onEcho('\r\n');
 
@@ -330,6 +506,9 @@
             // Collapse consecutive duplicates the way a shell history does.
             if (this.history.length === 0 || this.history[this.history.length - 1] !== line) {
                 this.history.push(line);
+                if (this.history.length > this.maxHistory) {
+                    this.history.shift();
+                }
             }
         }
         this.historyIndex = this.history.length;
@@ -364,13 +543,26 @@
      * Swaps the visible input line for `text` by erasing what was echoed before.
      */
     TerminalInput.prototype.replaceBuffer = function (text) {
-        var erase = '';
-        for (var i = 0; i < this.buffer.length; i++) {
-            erase += '\b \b';
-        }
+        var replacement = text || '';
 
-        this.buffer = text;
-        this.onEcho(erase + text);
+        // Rewind to the start of the line before erasing, so the caret does not
+        // have to be at the end for this to work.
+        var prefix = repeat('\b', this.cursor);
+        var blank = repeat(' ', this.buffer.length);
+        var rewind = repeat('\b', this.buffer.length);
+
+        this.buffer = replacement;
+        this.cursor = replacement.length;
+
+        this.onEcho(prefix + blank + rewind + replacement);
+    };
+
+    /**
+     * Applies a line rewritten by the host - tab completion, for instance - so
+     * the screen and this buffer stay in agreement.
+     */
+    TerminalInput.prototype.setLine = function (text) {
+        this.replaceBuffer(text || '');
     };
 
     TerminalInput.prototype.copy = function (text) {
@@ -397,6 +589,7 @@
 
     TerminalInput.prototype.clear = function () {
         this.buffer = '';
+        this.cursor = 0;
         this.historyIndex = this.history.length;
     };
 

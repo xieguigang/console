@@ -149,6 +149,7 @@ Public Class SshWinFormConsole : Inherits UserControl
         '  Assign the back-end and start the session through the inherited API.
         ConsoleControl1.SetConsoleCore(sshInterface)
         ConsoleControl1.StartProcess()
+        ConsoleControl1.FocusTerminal()
     End Sub
 
     ''' <summary>Disconnects the active SSH session.</summary>
@@ -222,9 +223,11 @@ Public Class SshWinFormConsole : Inherits UserControl
         ConsoleControl1.Margin = New Padding(4, 4, 4, 4)
         ConsoleControl1.Name = "ConsoleControl1"
 
-        '  Keyboard commands (incl. Ctrl+C) are forwarded to the shell so control
-        '  signals reach the remote process and can interrupt programs such as htop.
-        ConsoleControl1.SendKeyboardCommandsToProcess = True
+        '  Key forwarding is deliberately left alone: the console derives it from
+        '  whichever back-end is bound, so the local shell gets line editing and
+        '  the SSH session gets raw pass-through (which is what lets Ctrl+C
+        '  interrupt programs such as htop). Setting it here would pin the control
+        '  to one mode and break the other.
         ConsoleControl1.ShowDiagnostics = False
         ConsoleControl1.Size = New Size(852, 663)
         ConsoleControl1.TabIndex = 0
@@ -260,6 +263,7 @@ Public Class SshWinFormConsole : Inherits UserControl
         localInterface = New LocalShellInterface()
         ConsoleControl1.SetConsoleCore(localInterface)
         ConsoleControl1.StartProcess()
+        ConsoleControl1.FocusTerminal()
     End Sub
 
     ''' <summary>

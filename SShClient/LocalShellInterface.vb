@@ -11,7 +11,7 @@ Imports Microsoft.VisualBasic.Windows.Forms.Win32
 ''' session. All other commands (pwd, ls, cd, cat, echo, mkdir, rm, clear, whoami,
 ''' help, exit) are executed directly using .NET System.IO.
 ''' </summary>
-Public Class LocalShellInterface : Inherits AbstractProcessInterface
+Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implements IEditableInputLine
 
     Private _running As Boolean = False
     Private _cwd As String = Environment.CurrentDirectory
@@ -104,9 +104,250 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface
         End Try
     End Sub
 
-    ''' <summary>No external process => raw bytes are ignored.</summary>
+    ''' <summary>
+    ''' Handles the control keys the renderer cannot deal with on its own, because
+    ''' they need shell state: completion needs the command table and the working
+    ''' directory, Ctrl+C needs to abandon the pending line and reprint the prompt.
+    ''' Anything else is ignored - there is no process to forward it to.
+    ''' </summary>
     Public Overrides Sub WriteRaw(input As String)
+        If Not _running OrElse String.IsNullOrEmpty(input) Then Return
+
+        Select Case input
+            Case vbTab
+                CompleteCurrentLine()
+
+            Case ChrW(3)    '  Ctrl+C - abandon the line.
+                RaiseOutputEvent("^C" & Environment.NewLine)
+                ClearEditorLine()
+                ShowPrompt()
+
+            Case ChrW(12)   '  Ctrl+L - clear the screen, keep what was typed.
+                Dim pending As String = _editorLine
+
+                RaiseOutputEvent(ChrW(&H1B) & "[2J" & ChrW(&H1B) & "[H")
+                ShowPrompt()
+
+                If pending.Length > 0 Then
+                    '  ShowPrompt does not know about the pending line, so echo it
+                    '  back and let the renderer re-adopt it.
+                    RaiseOutputEvent(pending)
+                    RaiseSetInputLineEvent(pending)
+                End If
+
+            Case Else
+                '  Unrecognised sequence: silently ignored.
+        End Select
     End Sub
+
+#End Region
+
+#Region "Line editing support"
+
+    '''  The renderer's uncommitted input line and caret, pushed in just before
+    '''  every raw keystroke so completion can work against what is on screen.
+    Private _editorLine As String = String.Empty
+    Private _editorCursor As Integer
+
+    ''' <summary>
+    ''' A local shell has no PTY, so the renderer should echo and edit lines
+    ''' itself and only submit them once complete.
+    ''' </summary>
+    Public Overrides ReadOnly Property PreferredInputMode As ConsoleInputMode
+        Get
+            Return ConsoleInputMode.LineEdit
+        End Get
+    End Property
+
+    Public Sub SetEditorState(line As String, cursorPosition As Integer) Implements IEditableInputLine.SetEditorState
+        _editorLine = If(line, String.Empty)
+        _editorCursor = System.Math.Max(0, System.Math.Min(_editorLine.Length, cursorPosition))
+    End Sub
+
+    ''' <summary>
+    ''' Drops the pending line on both sides of the channel.
+    ''' </summary>
+    Private Sub ClearEditorLine()
+        _editorLine = String.Empty
+        _editorCursor = 0
+        RaiseSetInputLineEvent(String.Empty)
+    End Sub
+
+    ''' <summary>
+    ''' Tab completion. The first token completes against the built-in command
+    ''' names, later tokens against the file system. A single candidate is applied
+    ''' straight away; several are listed and the line is reprinted underneath, the
+    ''' way bash does it.
+    ''' </summary>
+    Private Sub CompleteCurrentLine()
+        '  Only completing at the end of the line keeps the rewrite unambiguous.
+        Dim line As String = _editorLine
+
+        If _editorCursor < line.Length Then Return
+
+        Dim prefixStart As Integer = line.LastIndexOfAny(New Char() {" "c, ControlChars.Tab}) + 1
+        Dim stem As String = line.Substring(prefixStart)
+        Dim isCommandSlot As Boolean = prefixStart = 0
+
+        Dim candidates As List(Of String) = If(isCommandSlot,
+            CompleteCommand(stem),
+            CompletePath(stem))
+
+        If candidates.Count = 0 Then Return
+
+        If candidates.Count = 1 Then
+            ApplyCompletion(line, prefixStart, candidates(0))
+            Return
+        End If
+
+        '  Extend as far as the candidates agree before showing the list; that is
+        '  what makes repeated Tab presses feel responsive.
+        Dim common As String = LongestCommonPrefix(candidates)
+
+        If common.Length > stem.Length Then
+            ApplyCompletion(line, prefixStart, common, appendSpace:=False)
+            Return
+        End If
+
+        RaiseOutputEvent(Environment.NewLine)
+        RaiseOutputEvent(FormatCandidateColumns(candidates))
+        ShowPrompt()
+        RaiseOutputEvent(line)
+        RaiseSetInputLineEvent(line)
+    End Sub
+
+    ''' <summary>
+    ''' Rewrites the tail of the line with <paramref name="completion"/> and tells
+    ''' the renderer, so the screen and its line buffer cannot drift apart.
+    ''' </summary>
+    Private Sub ApplyCompletion(line As String,
+                                prefixStart As Integer,
+                                completion As String,
+                                Optional appendSpace As Boolean = True)
+
+        Dim completed As String = line.Substring(0, prefixStart) & completion
+
+        '  A trailing separator already implies "keep going", so no space there.
+        If appendSpace AndAlso
+           Not completion.EndsWith(Path.DirectorySeparatorChar) AndAlso
+           Not completion.EndsWith("/"c) Then
+            completed &= " "
+        End If
+
+        If completed = line Then Return
+
+        _editorLine = completed
+        _editorCursor = completed.Length
+
+        RaiseSetInputLineEvent(completed)
+    End Sub
+
+    Private Shared ReadOnly BuiltinCommands As String() = {
+        "cat", "cd", "clear", "echo", "exit", "help",
+        "ls", "mkdir", "pwd", "rm", "ssh", "whoami"
+    }
+
+    Private Shared Function CompleteCommand(stem As String) As List(Of String)
+        Return BuiltinCommands _
+            .Where(Function(name) name.StartsWith(stem, StringComparison.OrdinalIgnoreCase)) _
+            .ToList()
+    End Function
+
+    ''' <summary>
+    ''' Completes a file-system stem against a single directory level. Deliberately
+    ''' not recursive, and capped, so completing in a large tree cannot stall the
+    ''' UI thread.
+    ''' </summary>
+    Private Function CompletePath(stem As String) As List(Of String)
+        Const maxCandidates As Integer = 200
+
+        Dim results As New List(Of String)()
+
+        Try
+            '  Split the stem into "directory part we search" and "name part we
+            '  match", keeping the directory part verbatim so the completion can be
+            '  spliced back onto the line unchanged.
+            Dim separator As Integer = stem.LastIndexOfAny(New Char() {"/"c, "\"c})
+            Dim typedDirectory As String = If(separator >= 0, stem.Substring(0, separator + 1), String.Empty)
+            Dim namePrefix As String = If(separator >= 0, stem.Substring(separator + 1), stem)
+
+            Dim searchRoot As String = If(typedDirectory.Length = 0, _cwd, ResolvePath(typedDirectory))
+
+            If Not Directory.Exists(searchRoot) Then Return results
+
+            For Each entry As String In Directory.EnumerateFileSystemEntries(searchRoot)
+                Dim name As String = Path.GetFileName(entry)
+
+                If Not name.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase) Then Continue For
+
+                '  Directories get a trailing separator so the next Tab descends.
+                If Directory.Exists(entry) Then
+                    name &= Path.DirectorySeparatorChar
+                End If
+
+                results.Add(typedDirectory & name)
+
+                If results.Count >= maxCandidates Then Exit For
+            Next
+        Catch
+            '  Unreadable or over-long paths simply yield no completion; surfacing
+            '  the exception here would paint an error over the user's line.
+            results.Clear()
+        End Try
+
+        results.Sort(StringComparer.OrdinalIgnoreCase)
+
+        Return results
+    End Function
+
+    Private Shared Function LongestCommonPrefix(values As List(Of String)) As String
+        If values.Count = 0 Then Return String.Empty
+
+        Dim prefix As String = values(0)
+
+        For i As Integer = 1 To values.Count - 1
+            Dim candidate As String = values(i)
+            Dim length As Integer = 0
+
+            While length < prefix.Length AndAlso
+                  length < candidate.Length AndAlso
+                  Char.ToLowerInvariant(prefix(length)) = Char.ToLowerInvariant(candidate(length))
+                length += 1
+            End While
+
+            prefix = prefix.Substring(0, length)
+
+            If prefix.Length = 0 Then Exit For
+        Next
+
+        Return prefix
+    End Function
+
+    ''' <summary>
+    ''' Lays the candidates out in even columns, as a shell would.
+    ''' </summary>
+    Private Shared Function FormatCandidateColumns(candidates As List(Of String)) As String
+        Const lineWidth As Integer = 80
+
+        Dim widest As Integer = candidates.Max(Function(c) c.Length) + 2
+        Dim columns As Integer = System.Math.Max(1, lineWidth \ widest)
+
+        Dim sb As New StringBuilder()
+
+        For i As Integer = 0 To candidates.Count - 1
+            sb.Append(candidates(i).PadRight(widest))
+
+            If (i + 1) Mod columns = 0 Then
+                sb.Append(Environment.NewLine)
+            End If
+        Next
+
+        If candidates.Count Mod columns <> 0 Then
+            sb.Append(Environment.NewLine)
+        End If
+
+        Return sb.ToString()
+    End Function
 
 #End Region
 
