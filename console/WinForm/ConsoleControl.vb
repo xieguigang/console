@@ -5,8 +5,9 @@ Imports Microsoft.VisualBasic.Windows.Forms.Win32
 ''' The Console Control allows you to embed a basic console in your application.
 ''' </summary>
 Partial Public Class ConsoleControl : Inherits UserControl
+    Implements IConsoleControl
 
-    Public Property [ReadOnly] As Boolean
+    Public Property [ReadOnly] As Boolean Implements IConsoleControl.ReadOnly
         Get
             Return richTextBoxConsole.ReadOnly
         End Get
@@ -64,12 +65,12 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Occurs when console output is produced.
     ''' </summary>
-    Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs)
+    Public Event OnConsoleOutput(sender As Object, args As ConsoleEventArgs) Implements IConsoleControl.OnConsoleOutput
 
     ''' <summary>
     ''' Occurs when console input is produced.
     ''' </summary>
-    Public Event OnConsoleInput(sender As Object, args As ConsoleEventArgs)
+    Public Event OnConsoleInput(sender As Object, args As ConsoleEventArgs) Implements IConsoleControl.OnConsoleInput
 
     ''' <summary>
     ''' Gets or sets a value indicating whether to show diagnostics.
@@ -78,7 +79,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     '''   <c>true</c> if show diagnostics; otherwise, <c>false</c>.
     ''' </value>
     <Category("Console Control"), Description("Show diagnostic information, such as exceptions.")>
-    Public Property ShowDiagnostics As Boolean
+    Public Property ShowDiagnostics As Boolean Implements IConsoleControl.ShowDiagnostics
 
     ''' <summary>
     ''' Gets or sets a value indicating whether this instance is input enabled.
