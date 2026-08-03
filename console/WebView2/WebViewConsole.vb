@@ -99,7 +99,13 @@ Partial Public Class WebViewConsole : Inherits UserControl
         m_console = New ProcessInterface()
         m_host = New WebViewConsoleHost(WebView21)
 
-        m_flushTimer = New Timer With {.Interval = FlushIntervalMs}
+        '  Registering with the designer's container means the timer is torn down
+        '  by the generated Dispose override along with the rest of the control.
+        If components Is Nothing Then
+            components = New Container()
+        End If
+
+        m_flushTimer = New Timer(components) With {.Interval = FlushIntervalMs}
 
         InitialiseKeyMappings()
     End Sub
@@ -307,17 +313,8 @@ Partial Public Class WebViewConsole : Inherits UserControl
         Using brush As New SolidBrush(Color.FromArgb(255, 107, 107))
             e.Graphics.FillRectangle(Brushes.Black, ClientRectangle)
             e.Graphics.DrawString(m_initialisationError, Font, brush,
-                                  New RectangleF(8, 8, Math.Max(1, ClientSize.Width - 16), Math.Max(1, ClientSize.Height - 16)))
+                                  New RectangleF(8, 8, System.Math.Max(1, ClientSize.Width - 16), System.Math.Max(1, ClientSize.Height - 16)))
         End Using
-    End Sub
-
-    Protected Overrides Sub Dispose(disposing As Boolean)
-        If disposing Then
-            m_flushTimer?.Stop()
-            m_flushTimer?.Dispose()
-        End If
-
-        MyBase.Dispose(disposing)
     End Sub
 
     ''' <summary>
@@ -382,7 +379,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
             .Alt = m.IsAltPressed,
             .Shift = m.IsShiftPressed,
             .Key = ToDomKey(m.KeyCode),
-            .Data = m.StreamData
+            .Data = m.StreamMapping
         }).ToArray()
 
         PostToRenderer(TerminalMessage.Config(m_isInputEnabled, m_readOnly, m_sendKeyboardCommandsToProcess, payload))
