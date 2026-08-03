@@ -281,7 +281,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
         Return BackColor <> TerminalBackColor
     End Function
 
-    Private Sub ResetBackColor()
+    Public Overrides Sub ResetBackColor()
         BackColor = TerminalBackColor
     End Sub
 
@@ -289,7 +289,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
         Return ForeColor <> TerminalForeColor
     End Function
 
-    Private Sub ResetForeColor()
+    Public Overrides Sub ResetForeColor()
         ForeColor = TerminalForeColor
     End Sub
 
