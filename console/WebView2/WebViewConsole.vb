@@ -39,6 +39,28 @@ Partial Public Class WebViewConsole : Inherits UserControl
     Private Const FlushIntervalMs As Integer = 16
 
     ''' <summary>
+    ''' The terminal's out-of-the-box background colour.
+    ''' </summary>
+    ''' <remarks>
+    ''' A dark grey rather than pure black: it keeps the ANSI "bright black"
+    ''' (#808080) foreground legible, which a pure black backdrop renders as an
+    ''' almost invisible smudge, while still reading as a terminal.
+    ''' <para>
+    ''' Defining this explicitly matters because <see cref="Control.DefaultBackColor"/>
+    ''' is the light system window colour. Without an override the control would
+    ''' publish white to the renderer and drown out the white text that shells
+    ''' emit by default.
+    ''' </para>
+    ''' </remarks>
+    Private Shared ReadOnly TerminalBackColor As Color = Color.FromArgb(30, 30, 30)
+
+    ''' <summary>
+    ''' The terminal's out-of-the-box foreground colour, used for text that
+    ''' carries no explicit SGR colour.
+    ''' </summary>
+    Private Shared ReadOnly TerminalForeColor As Color = Color.White
+
+    ''' <summary>
     ''' The process back-end.
     ''' </summary>
     ''' <remarks>
@@ -95,6 +117,12 @@ Partial Public Class WebViewConsole : Inherits UserControl
         InitializeComponent()
 
         SetStyle(ControlStyles.ResizeRedraw, True)
+
+        '  Applied after InitializeComponent so the designer cannot leave the
+        '  inherited system colours in place, and before the host starts so the
+        '  very first style push already carries the terminal palette.
+        MyBase.BackColor = TerminalBackColor
+        MyBase.ForeColor = TerminalForeColor
 
         m_console = New ProcessInterface()
         m_host = New WebViewConsoleHost(WebView21)
@@ -242,9 +270,33 @@ Partial Public Class WebViewConsole : Inherits UserControl
         End Set
     End Property
 
+    '  Control.DefaultBackColor / DefaultForeColor are Shared and therefore not
+    '  overridable, so the designer's "differs from default" test cannot be
+    '  retargeted that way. ShouldSerialize/Reset are the supported hooks: they
+    '  tell the designer to treat the terminal palette -- not the system colours
+    '  -- as this control's baseline, which keeps a redundant (and misleading)
+    '  BackColor line out of every consumer's generated code.
+
+    Private Function ShouldSerializeBackColor() As Boolean
+        Return BackColor <> TerminalBackColor
+    End Function
+
+    Private Sub ResetBackColor()
+        BackColor = TerminalBackColor
+    End Sub
+
+    Private Function ShouldSerializeForeColor() As Boolean
+        Return ForeColor <> TerminalForeColor
+    End Function
+
+    Private Sub ResetForeColor()
+        ForeColor = TerminalForeColor
+    End Sub
+
     ''' <summary>
     ''' Gets or sets the default foreground colour (SGR 39).
     ''' </summary>
+    <Category("Appearance")>
     Public Overrides Property ForeColor As Color
         Get
             Return MyBase.ForeColor
@@ -258,6 +310,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
     ''' <summary>
     ''' Gets or sets the default background colour (SGR 49).
     ''' </summary>
+    <Category("Appearance")>
     Public Overrides Property BackColor As Color
         Get
             Return MyBase.BackColor
@@ -310,8 +363,9 @@ Partial Public Class WebViewConsole : Inherits UserControl
         End If
 
         '  The WebView never came up, so paint the diagnostic ourselves.
-        Using brush As New SolidBrush(Color.FromArgb(255, 107, 107))
-            e.Graphics.FillRectangle(Brushes.Black, ClientRectangle)
+        Using brush As New SolidBrush(Color.FromArgb(255, 107, 107)),
+              backdrop As New SolidBrush(BackColor)
+            e.Graphics.FillRectangle(backdrop, ClientRectangle)
             e.Graphics.DrawString(m_initialisationError, Font, brush,
                                   New RectangleF(8, 8, System.Math.Max(1, ClientSize.Width - 16), System.Math.Max(1, ClientSize.Height - 16)))
         End Using

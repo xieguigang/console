@@ -2,16 +2,16 @@
     Terminal styling.
 
     The host overrides --term-font, --term-size, --term-fg and --term-bg at
-    runtime from the WinForms Font / ForeColor / BackColor properties, so the
-    values here are only the black-on-white-text defaults that match
-    AnsiEscapeRenderer.AnsiTerminalState.
+    runtime from the WinForms Font / ForeColor / BackColor properties. The values
+    here are the white-on-dark-grey defaults that WebViewConsole also uses, so
+    the first painted frame already matches what the host is about to push.
 */
 :root {
     --term-font: Consolas, "Cascadia Mono", "Courier New", monospace;
     --term-size: 12px;
     --term-line-height: 1.2;
     --term-fg: #ffffff;
-    --term-bg: #000000;
+    --term-bg: #1e1e1e;
     --term-selection: rgba(80, 140, 255, 0.45);
 }
 

@@ -50,8 +50,10 @@
         this.followTail = true;
         this.focused = false;
 
+        // Kept in step with the :root custom properties in terminal.css and with
+        // WebViewConsole's TerminalForeColor / TerminalBackColor.
         this.defaultForeground = '#ffffff';
-        this.defaultBackground = '#000000';
+        this.defaultBackground = '#1e1e1e';
 
         var self = this;
         this.viewport.addEventListener('scroll', function () {

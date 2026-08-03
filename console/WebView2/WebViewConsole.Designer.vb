@@ -30,9 +30,9 @@ Partial Class WebViewConsole
         ' 
         WebView21.AllowExternalDrop = False
         WebView21.CreationProperties = Nothing
-        '  Black matches the terminal background, so the control does not flash
-        '  white while the browser is still starting up.
-        WebView21.DefaultBackgroundColor = Color.Black
+        '  Matches the terminal background, so the control does not flash white
+        '  while the browser is still starting up.
+        WebView21.DefaultBackgroundColor = Color.FromArgb(30, 30, 30)
         WebView21.Dock = DockStyle.Fill
         WebView21.Location = New Point(0, 0)
         WebView21.Name = "WebView21"
