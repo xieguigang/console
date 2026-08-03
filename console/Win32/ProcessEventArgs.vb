@@ -21,7 +21,7 @@
         Public ReadOnly Property Ansi As Boolean = False
 
         ''' <summary>
-        ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
+        ''' Initializes a new instance of the <see cref="ProcessEventArgs"/> class.
         ''' </summary>
         Public Sub New()
         End Sub
@@ -31,7 +31,7 @@
         End Sub
 
         ''' <summary>
-        ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
+        ''' Initializes a new instance of the <see cref="ProcessEventArgs"/> class.
         ''' </summary>
         ''' <param name="content">The content.</param>
         ''' <param name="ansi">The content contains ANSI escape codes.</param>
@@ -42,7 +42,7 @@
         End Sub
 
         ''' <summary>
-        ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
+        ''' Initializes a new instance of the <see cref="ProcessEventArgs"/> class.
         ''' </summary>
         ''' <param name="code">The code.</param>
         Public Sub New(code As Integer)
@@ -51,7 +51,7 @@
         End Sub
 
         ''' <summary>
-        ''' Initializes a new instance of the <seecref="ProcessEventArgs"/> class.
+        ''' Initializes a new instance of the <see cref="ProcessEventArgs"/> class.
         ''' </summary>
         ''' <param name="content">The content.</param>
         ''' <param name="code">The code.</param>

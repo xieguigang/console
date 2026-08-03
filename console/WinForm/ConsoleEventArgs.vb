@@ -9,13 +9,13 @@ Public Class ConsoleEventArgs : Inherits EventArgs
     Public ReadOnly Property Content As String
 
     ''' <summary>
-    ''' Initializes a new instance of the <seecref="ConsoleEventArgs"/> class.
+    ''' Initializes a new instance of the <see cref="ConsoleEventArgs"/> class.
     ''' </summary>
     Public Sub New()
     End Sub
 
     ''' <summary>
-    ''' Initializes a new instance of the <seecref="ConsoleEventArgs"/> class.
+    ''' Initializes a new instance of the <see cref="ConsoleEventArgs"/> class.
     ''' </summary>
     ''' <param name="content">The content.</param>
     Public Sub New(content As String)

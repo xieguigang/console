@@ -100,7 +100,7 @@ Namespace Win32
         End Sub
 
         ''' <summary>
-        ''' Initializes a new instance of the <seecref="ProcessInterface"/> class.
+        ''' Initializes a new instance of the <see cref="ProcessInterface"/> class.
         ''' </summary>
         Protected Sub New(void As Object)
             '  Configure the output worker.
@@ -136,7 +136,7 @@ Namespace Win32
         ''' Handles the ProgressChanged event of the outputWorker control.
         ''' </summary>
         ''' <param name="sender">The source of the event.</param>
-        ''' <param name="e">The <seecref="System.ComponentModel.ProgressChangedEventArgs"/> instance containing the event data.</param>
+        ''' <param name="e">The <see cref="System.ComponentModel.ProgressChangedEventArgs"/> instance containing the event data.</param>
         Private Sub outputWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles outputWorker.ProgressChanged
             '  We must be passed a string in the user state.
             If TypeOf e.UserState Is String Then
@@ -149,7 +149,7 @@ Namespace Win32
         ''' Handles the DoWork event of the outputWorker control.
         ''' </summary>
         ''' <param name="sender">The source of the event.</param>
-        ''' <param name="e">The <seecref="System.ComponentModel.DoWorkEventArgs"/> instance containing the event data.</param>
+        ''' <param name="e">The <see cref="System.ComponentModel.DoWorkEventArgs"/> instance containing the event data.</param>
         Private Sub outputWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles outputWorker.DoWork
             While outputWorker.CancellationPending = False
                 '  Any lines to read?
@@ -170,7 +170,7 @@ Namespace Win32
         ''' Handles the ProgressChanged event of the errorWorker control.
         ''' </summary>
         ''' <param name="sender">The source of the event.</param>
-        ''' <param name="e">The <seecref="System.ComponentModel.ProgressChangedEventArgs"/> instance containing the event data.</param>
+        ''' <param name="e">The <see cref="System.ComponentModel.ProgressChangedEventArgs"/> instance containing the event data.</param>
         Private Sub errorWorker_ProgressChanged(sender As Object, e As ProgressChangedEventArgs) Handles errorWorker.ProgressChanged
             '  The userstate must be a string.
             If TypeOf e.UserState Is String Then
@@ -183,7 +183,7 @@ Namespace Win32
         ''' Handles the DoWork event of the errorWorker control.
         ''' </summary>
         ''' <param name="sender">The source of the event.</param>
-        ''' <param name="e">The <seecref="System.ComponentModel.DoWorkEventArgs"/> instance containing the event data.</param>
+        ''' <param name="e">The <see cref="System.ComponentModel.DoWorkEventArgs"/> instance containing the event data.</param>
         Private Sub errorWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles errorWorker.DoWork
             While errorWorker.CancellationPending = False
                 '  Any lines to read?

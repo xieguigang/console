@@ -6,17 +6,18 @@ Imports std = System.Math
 
 ''' <summary>
 ''' A ready-to-use WinForms console control that opens an interactive SSH shell.
-''' It derives from <c>ConsoleControl</c> and plugs an <see cref="SshProcessInterface"/>
+''' It hosts a <see cref="WebViewConsole"/> and plugs an <see cref="SshProcessInterface"/>
 ''' in as the back-end, so all ANSI rendering, line editing and input handling is
-''' inherited unchanged.
+''' delegated to the terminal control unchanged.
 ''' </summary>
 Public Class SshWinFormConsole : Inherits UserControl
 
     Private sshInterface As SshProcessInterface = Nothing
     Private WithEvents localInterface As LocalShellInterface = Nothing
-    '  Use TerminalControl (grid-based renderer) so htop/btop clear-screen
-    '  repaints and Ctrl+C interrupt signalling work correctly.
-    Friend WithEvents ConsoleControl1 As ConsoleControl
+    '  WebView2-backed renderer: the character grid, ANSI parsing and painting all
+    '  run in the browser, so full-screen repaints (htop/btop) and Ctrl+C
+    '  interrupt signalling behave like a real terminal.
+    Friend WithEvents ConsoleControl1 As WebViewConsole
     Private m_autoConnectOnFocus As Boolean = False
 
     ''' <summary>
@@ -138,10 +139,10 @@ Public Class SshWinFormConsole : Inherits UserControl
 
         '  Build the back-end, estimate the terminal size and wire it up.
         sshInterface = New SshProcessInterface(options)
-        EstimateAndApplyTerminalSize(sshInterface)
+        ApplyTerminalSize(sshInterface)
 
-        '  The base ConsoleControl already renders OnProcessOutput; we only need
-        '  to surface errors / session end in addition.
+        '  The terminal control already renders OnProcessOutput; we only need to
+        '  surface errors / session end in addition.
         AddHandler sshInterface.OnProcessError, AddressOf OnSshError
         AddHandler sshInterface.OnProcessExit, AddressOf OnSshExit
 
@@ -163,58 +164,41 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     ''' <summary>
-    ''' Estimates terminal rows/columns from the control size and font, then
-    ''' applies them to the SSH back-end.
+    ''' Applies the terminal's current grid size to the SSH back-end.
     ''' </summary>
-    Private Sub EstimateAndApplyTerminalSize(backend As SshProcessInterface)
-        Dim font = GetConsoleFont()
-        If font Is Nothing Then
-            backend.Columns = 80UI
-            backend.Rows = 24UI
+    ''' <remarks>
+    ''' The size is taken from the renderer, which measures a real glyph in the
+    ''' browser, rather than estimated from font metrics on this side. That keeps
+    ''' the pty window exactly in step with what is actually displayed, which
+    ''' full-screen programs rely on to lay themselves out.
+    ''' </remarks>
+    Private Sub ApplyTerminalSize(backend As SshProcessInterface)
+        backend.Columns = CUInt(std.Max(1, ConsoleControl1.TerminalColumns))
+        backend.Rows = CUInt(std.Max(1, ConsoleControl1.TerminalRows))
+    End Sub
+
+    ''' <summary>
+    ''' Propagates a renderer-reported grid change to the live SSH session.
+    ''' </summary>
+    ''' <remarks>
+    ''' Driven by the terminal rather than by <c>OnResize</c>: the browser needs a
+    ''' layout pass before it can report the new size, so resizing off the WinForms
+    ''' event would push a stale row/column count to the remote host.
+    ''' </remarks>
+    Private Sub OnTerminalResized(columns As Integer, rows As Integer) Handles ConsoleControl1.TerminalResized
+        If sshInterface Is Nothing OrElse Not ConsoleControl1.IsProcessRunning Then
             Return
         End If
 
-        Using g = Me.CreateGraphics()
-            Dim charSize = g.MeasureString("M", font)
-            If charSize.Width > 0 AndAlso charSize.Height > 0 Then
-                backend.Columns = CUInt(std.Max(1, CInt(Me.ClientSize.Width \ charSize.Width)))
-                backend.Rows = CUInt(std.Max(1, CInt(Me.ClientSize.Height \ charSize.Height)))
-            End If
-        End Using
+        ApplyTerminalSize(sshInterface)
+        sshInterface.ResizeTerminal(sshInterface.Columns, sshInterface.Rows)
     End Sub
-
-    ''' <summary>Resolves the monospace font used by the embedded console.</summary>
-    Private Function GetConsoleFont() As Font
-        '  The base ConsoleControl initializes its RichTextBox with Consolas 9.75pt.
-        '  Reach it through reflection so we do not depend on its (private) field.
-        Try
-            Dim rtb = GetType(ConsoleControl) _
-                    .GetField("richTextBoxConsole", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance) _
-                    ?.GetValue(Me)
-
-            If rtb IsNot Nothing Then
-                Return DirectCast(rtb, RichTextBox).Font
-            End If
-        Catch
-        End Try
-
-        Return New Font("Consolas", 9.75F, FontStyle.Regular, GraphicsUnit.Point)
-    End Function
 
     Protected Overrides Sub OnGotFocus(e As EventArgs)
         MyBase.OnGotFocus(e)
 
         If m_autoConnectOnFocus AndAlso Not ConsoleControl1.IsProcessRunning AndAlso ConnectionOptions.IsValid() Then
             Connect()
-        End If
-    End Sub
-
-    Protected Overrides Sub OnResize(e As EventArgs)
-        MyBase.OnResize(e)
-
-        If sshInterface IsNot Nothing AndAlso ConsoleControl1.IsProcessRunning Then
-            EstimateAndApplyTerminalSize(sshInterface)
-            sshInterface.ResizeTerminal(sshInterface.Columns, sshInterface.Rows)
         End If
     End Sub
 
@@ -227,7 +211,7 @@ Public Class SshWinFormConsole : Inherits UserControl
     End Sub
 
     Private Sub InitializeComponent()
-        ConsoleControl1 = New ConsoleControl()
+        ConsoleControl1 = New WebViewConsole()
         SuspendLayout()
         ' 
         ' ConsoleControl1

@@ -222,12 +222,12 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Gets or sets the font of the text displayed by the control.
     ''' </summary>
-    ''' <returns>The <seecref="T:System.Drawing.Font"/> to apply to the text displayed by the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultFont"/> property.</returns>
+    ''' <returns>The <see cref="T:System.Drawing.Font"/> to apply to the text displayed by the control. The default is the value of the <see cref="P:System.Windows.Forms.Control.DefaultFont"/> property.</returns>
     '''   <PermissionSet>
-    '''   <IPermissionclass="System.Security.Permissions.EnvironmentPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
-    '''   <IPermissionclass="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Flags="UnmanagedCode, ControlEvidence"/>
-    '''   <IPermissionclass="System.Diagnostics.PerformanceCounterPermission, System, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermission class="System.Security.Permissions.EnvironmentPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermission class="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermission class="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Flags="UnmanagedCode, ControlEvidence"/>
+    '''   <IPermission class="System.Diagnostics.PerformanceCounterPermission, System, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
     '''   </PermissionSet>
     Public Overrides Property Font As Font
         Get
@@ -246,9 +246,9 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Gets or sets the background color for the control.
     ''' </summary>
-    ''' <returns>A <seecref="T:System.Drawing.Color"/> that represents the background color of the control. The default is the value of the <seecref="P:System.Windows.Forms.Control.DefaultBackColor"/> property.</returns>
+    ''' <returns>A <see cref="T:System.Drawing.Color"/> that represents the background color of the control. The default is the value of the <see cref="P:System.Windows.Forms.Control.DefaultBackColor"/> property.</returns>
     '''   <PermissionSet>
-    '''   <IPermissionclass="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
+    '''   <IPermission class="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"version="1"Unrestricted="true"/>
     '''   </PermissionSet>
     Public Overrides Property BackColor As Color
         Get
@@ -275,7 +275,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     End Property
 
     ''' <summary>
-    ''' Initializes a new instance of the <seecref="ConsoleControl"/> class.
+    ''' Initializes a new instance of the <see cref="ConsoleControl"/> class.
     ''' </summary>
     Public Sub New()
         '  Initialise the component.
@@ -310,7 +310,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Handles the OnProcessError event of the processInterace control.
     ''' </summary>
     ''' <param name="sender">The source of the event.</param>
-    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="args">The <see cref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessError(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessError
         '  Write the output, in red
         WriteOutput(args.Content, Color.Red)
@@ -323,7 +323,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Handles the OnProcessOutput event of the processInterace control.
     ''' </summary>
     ''' <param name="sender">The source of the event.</param>
-    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="args">The <see cref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessOutput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessOutput
         '  若后端声明 ANSI（True），或文本实际含有 ESC 转义字符，则走 ANSI 渲染路径；
         '  否则按纯文本输出（白字）。降级判断可兼容未声明 ANSI 却输出了转义码的后端。
@@ -341,7 +341,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Handles the OnProcessInput event of the processInterace control.
     ''' </summary>
     ''' <param name="sender">The source of the event.</param>
-    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="args">The <see cref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessInput
 
     End Sub
@@ -352,7 +352,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Handles the OnProcessExit event of the processInterace control.
     ''' </summary>
     ''' <param name="sender">The source of the event.</param>
-    ''' <param name="args">The <seecref="ProcessEventArgs"/> instance containing the event data.</param>
+    ''' <param name="args">The <see cref="ProcessEventArgs"/> instance containing the event data.</param>
     Private Sub processInterace_OnProcessExit(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessExit
         '  Are we showing diagnostics?
         If ShowDiagnostics AndAlso TypeOf ProcessInterface Is ProcessInterface Then
@@ -386,7 +386,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Handles the KeyDown event of the richTextBoxConsole control.
     ''' </summary>
     ''' <param name="sender">The source of the event.</param>
-    ''' <param name="e">The <seecref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
+    ''' <param name="e">The <see cref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
     Private Sub richTextBoxConsole_KeyDown(sender As Object, e As KeyEventArgs) Handles richTextBoxConsole.KeyDown
         '  Up/Down history navigation. Only when input is enabled, an input line exists and
         '  the caret is inside the input zone (so that scrolling in the read-only history
@@ -778,7 +778,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' <summary>
     ''' Runs a process.
     ''' </summary>
-    ''' <param name="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
+    ''' <param name="processStartInfo"><see cref="ProcessStartInfo"/> to pass to the process.</param>
     Public Sub StartProcess(processStartInfo As ProcessStartInfo)
         '  Are we showing diagnostics?
         If ShowDiagnostics Then

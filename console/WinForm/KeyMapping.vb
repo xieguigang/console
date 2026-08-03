@@ -53,13 +53,13 @@ Public Class KeyMapping
     Public Property StreamMapping As String
 
     ''' <summary>
-    ''' Initializes a new instance of the <seecref="KeyMapping"/> class.
+    ''' Initializes a new instance of the <see cref="KeyMapping"/> class.
     ''' </summary>
     Public Sub New()
     End Sub
 
     ''' <summary>
-    ''' Initializes a new instance of the <seecref="KeyMapping"/> class.
+    ''' Initializes a new instance of the <see cref="KeyMapping"/> class.
     ''' </summary>
     ''' <param name="control">if set to <c>true</c> [control].</param>
     ''' <param name="alt">if set to <c>true</c> [alt].</param>

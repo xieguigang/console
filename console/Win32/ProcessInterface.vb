@@ -55,7 +55,7 @@ Namespace Win32
 
         ''' <summary>
         ''' Runs the default local console (cmd.exe) without arguments.
-        ''' Provided so the parameterless <seecref="AbstractProcessInterface.StartProcess"/>
+        ''' Provided so the parameterless <see cref="AbstractProcessInterface.StartProcess"/>
         ''' contract can drive a local shell as well.
         ''' </summary>
         Public Overrides Sub StartProcess()
@@ -76,7 +76,7 @@ Namespace Win32
         ''' <summary>
         ''' Runs a process.
         ''' </summary>
-        ''' <param name="processStartInfo"><seecref="ProcessStartInfo"/> to pass to the process.</param>
+        ''' <param name="processStartInfo"><see cref="ProcessStartInfo"/> to pass to the process.</param>
         Public Overloads Sub StartProcess(processStartInfo As ProcessStartInfo)
             '  Set the options.
             processStartInfo.UseShellExecute = False
@@ -137,7 +137,7 @@ Namespace Win32
         ''' Handles the Exited event of the currentProcess control.
         ''' </summary>
         ''' <param name="sender">The source of the event.</param>
-        ''' <param name="e">The <seecref="System.EventArgs"/> instance containing the event data.</param>
+        ''' <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
         Private Sub currentProcess_Exited(sender As Object, e As EventArgs) Handles proc.Exited
             Dim exitCode As Integer = Process.ExitCode
 
@@ -181,7 +181,7 @@ Namespace Win32
             End If
         End Sub
 
-        ''' <summary>Finalizes an instance of the <seecref="ProcessInterface"/> class.</summary>
+        ''' <summary>Finalizes an instance of the <see cref="ProcessInterface"/> class.</summary>
         Protected Overrides Sub Finalize()
             Dispose(True)
         End Sub
