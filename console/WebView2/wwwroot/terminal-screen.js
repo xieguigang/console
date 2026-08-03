@@ -48,10 +48,23 @@
         if (a === null) {
             return '';
         }
-        return (a.fg || '') + '|' + (a.bg || '') + '|' +
+
+        var flags =
             (a.bold ? 'b' : '') + (a.dim ? 'd' : '') + (a.italic ? 'i' : '') +
             (a.underline ? 'u' : '') + (a.strike ? 's' : '') +
             (a.inverse ? 'v' : '') + (a.hidden ? 'h' : '');
+
+        /*
+            Fully default styling collapses to the blank key so that such cells
+            share the `null` attrs singleton and merge into the same span as
+            untouched blanks. Without this, every glyph after an SGR reset would
+            allocate its own attribute object.
+        */
+        if (!a.fg && !a.bg && flags === '') {
+            return '';
+        }
+
+        return (a.fg || '') + '|' + (a.bg || '') + '|' + flags;
     }
 
     function makeCell(ch, attrs, key) {

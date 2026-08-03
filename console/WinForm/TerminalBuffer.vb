@@ -347,9 +347,9 @@ Namespace Console
         End Enum
 
         ''' <summary>
-        ' Processes a chunk of text that may contain ANSI escape sequences and
-        ' applies them to the grid. Plain text is written via PutText.
-        ' </summary>
+        ''' Processes a chunk of text that may contain ANSI escape sequences and
+        ''' applies them to the grid. Plain text is written via PutText.
+        ''' </summary>
         Public Sub ProcessAnsi(text As String)
             If String.IsNullOrEmpty(text) Then Return
 

@@ -272,7 +272,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
 
 #Region "Lifecycle"
 
-    Protected Overrides Sub OnHandleCreated(e As EventArgs)
+    Protected Overrides Async Sub OnHandleCreated(e As EventArgs)
         MyBase.OnHandleCreated(e)
 
         If DesignMode Then
@@ -284,7 +284,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
 
         '  Fire and forget: the control stays usable while the browser starts,
         '  because everything written meanwhile is queued in m_pending.
-        m_host.InitializeAsync(WebViewConsoleHost.DefaultUserDataFolder())
+        Await m_host.InitializeAsync(WebViewConsoleHost.DefaultUserDataFolder())
     End Sub
 
     Private Sub OnHostInitialized()
