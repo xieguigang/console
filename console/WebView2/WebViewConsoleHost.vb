@@ -39,7 +39,7 @@ Namespace WebView2
         ''' </summary>
         Private Shared ReadOnly ResourcePrefix As New Lazy(Of String)(AddressOf ResolveResourcePrefix)
 
-        Private ReadOnly m_view As WebView2
+        Private ReadOnly m_view As Microsoft.Web.WebView2.WinForms.WebView2
 
         Private m_initialised As Boolean
 
@@ -54,7 +54,7 @@ Namespace WebView2
         ''' </summary>
         Public Event InitializationFailed(message As String)
 
-        Public Sub New(view As WebView2)
+        Public Sub New(view As Microsoft.Web.WebView2.WinForms.WebView2)
             m_view = view
         End Sub
 
@@ -148,7 +148,7 @@ Namespace WebView2
 
                 If GetAsset("terminal.html") Is Nothing Then
                     RaiseEvent InitializationFailed(
-                        "Terminal renderer assets are missing from " & AssetAssembly.GetName().Name & "." & Environment.NewLine &
+                        "Terminal renderer assets are missing from " & AssetAssembly.GetName().Name & "." & System.Environment.NewLine &
                         "Ensure the WebView2\wwwroot files are included as EmbeddedResource.")
                     Return
                 End If

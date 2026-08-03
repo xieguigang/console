@@ -28,9 +28,11 @@ Partial Class WebViewConsole
         ' 
         ' WebView21
         ' 
-        WebView21.AllowExternalDrop = True
+        WebView21.AllowExternalDrop = False
         WebView21.CreationProperties = Nothing
-        WebView21.DefaultBackgroundColor = Color.White
+        '  Black matches the terminal background, so the control does not flash
+        '  white while the browser is still starting up.
+        WebView21.DefaultBackgroundColor = Color.Black
         WebView21.Dock = DockStyle.Fill
         WebView21.Location = New Point(0, 0)
         WebView21.Name = "WebView21"
@@ -49,6 +51,6 @@ Partial Class WebViewConsole
         ResumeLayout(False)
     End Sub
 
-    Friend WithEvents WebView21 As Web.WebView2.WinForms.WebView2
+    Friend WithEvents WebView21 As Microsoft.Web.WebView2.WinForms.WebView2
 
 End Class
