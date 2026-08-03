@@ -88,7 +88,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 	<c>true</c> if this instance is input enabled; otherwise, <c>false</c>.
     ''' </value>
     <Category("Console Control"), Description("If true, the user can key in input.")>
-    Public Property IsInputEnabled As Boolean
+    Public Property IsInputEnabled As Boolean Implements IConsoleControl.IsInputEnabled
         Get
             Return m_isInputEnabled
         End Get
@@ -108,7 +108,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 	<c>true</c> if [send keyboard commands to process]; otherwise, <c>false</c>.
     ''' </value>
     <Category("Console Control"), Description("If true, special keyboard commands like Ctrl-C and tab are sent to the process.")>
-    Public Property SendKeyboardCommandsToProcess As Boolean
+    Public Property SendKeyboardCommandsToProcess As Boolean Implements IConsoleControl.SendKeyboardCommandsToProcess
 
     ''' <summary>
     ''' Gets a value indicating whether this instance is process running.
@@ -117,7 +117,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' 	<c>true</c> if this instance is process running; otherwise, <c>false</c>.
     ''' </value>
     <Browsable(False)>
-    Public ReadOnly Property IsProcessRunning As Boolean
+    Public ReadOnly Property IsProcessRunning As Boolean Implements IConsoleControl.IsProcessRunning
         Get
             If m_console Is Nothing Then
                 Return False
@@ -143,7 +143,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Gets the process interface.
     ''' </summary>
     <Browsable(False)>
-    Public ReadOnly Property ProcessInterface As AbstractProcessInterface
+    Public ReadOnly Property ProcessInterface As AbstractProcessInterface Implements IConsoleControl.ProcessInterface
         Get
             Return m_console
         End Get
@@ -153,7 +153,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
     ''' Gets the key mappings.
     ''' </summary>
     <Browsable(False)>
-    Public ReadOnly Property KeyMappings As New List(Of KeyMapping)
+    Public ReadOnly Property KeyMappings As New List(Of KeyMapping) Implements IConsoleControl.KeyMappings
 
     ''' <summary>
     ''' Gets or sets the font of the text displayed by the control.
