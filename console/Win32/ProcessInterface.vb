@@ -68,9 +68,9 @@ Namespace Win32
         ''' </summary>
         ''' <param name="fileName">Name of the file.</param>
         ''' <param name="arguments">The arguments.</param>
-        Public Overloads Sub StartProcess(fileName As String, arguments As String)
+        Public Overloads Sub StartProcess(fileName As String, arguments As String, Optional workspace As String = Nothing)
             '  Create the process start info.
-            StartProcess(New ProcessStartInfo(fileName, arguments))
+            StartProcess(New ProcessStartInfo(fileName, arguments) With {.WorkingDirectory = If(workspace, App.CurrentDirectory)})
         End Sub
 
         ''' <summary>

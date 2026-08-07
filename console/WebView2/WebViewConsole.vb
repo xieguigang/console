@@ -906,7 +906,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
     ''' <summary>
     ''' Starts a local process.
     ''' </summary>
-    Public Sub StartProcess(fileName As String, arguments As String) Implements IConsoleControl.StartProcess
+    Public Sub StartProcess(fileName As String, arguments As String, workspace As String)
         If ShowDiagnostics Then
             WriteOutput("Preparing to run " & fileName, Color.FromArgb(255, 0, 255, 0))
 
@@ -918,10 +918,17 @@ Partial Public Class WebViewConsole : Inherits UserControl
         End If
 
         If TypeOf m_console Is ProcessInterface Then
-            Call DirectCast(m_console, ProcessInterface).StartProcess(fileName, arguments)
+            Call DirectCast(m_console, ProcessInterface).StartProcess(fileName, arguments, workspace:=workspace)
         Else
             Call "Can not start external process".warning
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Starts a local process.
+    ''' </summary>
+    Public Sub StartProcess(fileName As String, arguments As String) Implements IConsoleControl.StartProcess
+        Call StartProcess(fileName, arguments, workspace:=App.CurrentDirectory)
     End Sub
 
     ''' <summary>
