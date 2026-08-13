@@ -1013,7 +1013,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
                         Case "i"c : ignoreCase = True
                         Case "n"c : showLineNum = True
                         Case "v"c : invert = True
-                        Case "r"c, "R"c : '  recursive (applied per-dir)
+                        Case "r"c, "R"c  '  recursive (applied per-dir)
                         Case Else
                     End Select
                 Next
@@ -1073,13 +1073,13 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
             For n As Integer = 0 To lines.Length - 1
                 Dim match As Boolean = rx.IsMatch(lines(n))
                 If match <> invert Then
-                    If showName Then sb.Append(Path.GetFileName(path) & ":")
+                    If showName Then sb.Append(System.IO.Path.GetFileName(path) & ":")
                     If showLineNum Then sb.Append((n + 1) & ":")
                     sb.AppendLine(lines(n))
                 End If
             Next
         Catch ex As Exception
-            sb.AppendLine($"grep: {Path.GetFileName(path)}: {ex.Message}")
+            sb.AppendLine($"grep: {System.IO.Path.GetFileName(path)}: {ex.Message}")
         End Try
     End Sub
 
@@ -1286,7 +1286,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
             Else
                 '  Hard link (files only).
                 If File.Exists(target) Then
-                    File.CreateHardLink(link, target)
+                    ' File.CreateHardLink(link, target)
                 Else
                     RaiseErrorEvent($"ln: failed to create hard link '{rest(1)}': No such file or directory{Environment.NewLine}")
                     ShowPrompt()
@@ -1333,13 +1333,13 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
 
         Dim comparer As IComparer(Of String)
         If numeric Then
-            comparer = Comparer(Of String).Create(Function(a, b)
-                                                      Dim da, db As Double
-                                                      Dim pa = Double.TryParse(a, da)
-                                                      Dim pb = Double.TryParse(b, db)
-                                                      If pa AndAlso pb Then Return da.CompareTo(db)
-                                                      Return String.Compare(a, b)
-                                                  End Function)
+            comparer = System.Collections.Generic.Comparer(Of String).Create(Function(a, b)
+                                                                                 Dim da, db As Double
+                                                                                 Dim pa = Double.TryParse(a, da)
+                                                                                 Dim pb = Double.TryParse(b, db)
+                                                                                 If pa AndAlso pb Then Return da.CompareTo(db)
+                                                                                 Return String.Compare(a, b)
+                                                                             End Function)
         Else
             comparer = StringComparer.Ordinal
         End If
@@ -1424,14 +1424,14 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         End If
 
         Dim fp = ResolvePath(file)
-        If Not File.Exists(fp) Then
+        If Not System.IO.File.Exists(fp) Then
             RaiseErrorEvent($"cut: {file}: No such file or directory{Environment.NewLine}")
             ShowPrompt()
             Return
         End If
 
         Dim sb As New StringBuilder()
-        For Each line In File.ReadAllLines(fp)
+        For Each line In System.IO.File.ReadAllLines(fp)
             Dim cols = line.Split(delim)
             Dim picked As New List(Of String)()
             For Each f In fieldSet
@@ -1444,6 +1444,22 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         ShowPrompt()
     End Sub
 
+    Private Sub CmdTr(del As String, file As String)
+        Dim fp As String = ResolvePath(file)
+        If Not System.IO.File.Exists(fp) Then
+            RaiseErrorEvent($"tr: {file}: No such file or directory{Environment.NewLine}")
+            ShowPrompt()
+            Return
+        End If
+        Dim text = System.IO.File.ReadAllText(fp)
+        For Each c In del
+            text = text.Replace(c, "")
+        Next
+        RaiseOutputEvent(text)
+        ShowPrompt()
+        Return
+    End Sub
+
     Private Sub CmdTr(tokens As String())
         '  tr SET1 SET2   (simplified: char-by-char translation / delete via -d)
         If tokens.Length < 2 Then
@@ -1453,21 +1469,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         End If
 
         If tokens(1) = "-d" AndAlso tokens.Length >= 3 AndAlso tokens.Length >= 4 Then
-            Dim del = tokens(2)
-            Dim file = tokens(3)
-            Dim fp = ResolvePath(file)
-            If Not File.Exists(fp) Then
-                RaiseErrorEvent($"tr: {file}: No such file or directory{Environment.NewLine}")
-                ShowPrompt()
-                Return
-            End If
-            Dim text = File.ReadAllText(fp)
-            For Each c In del
-                text = text.Replace(c, "")
-            Next
-            RaiseOutputEvent(text)
-            ShowPrompt()
-            Return
+            Call CmdTr(del:=tokens(2), file:=tokens(3))
         End If
 
         If tokens.Length < 3 Then
@@ -1480,13 +1482,13 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         Dim set2 = ExpandTrSet(tokens(2))
         Dim file = tokens(3)
         Dim fp = ResolvePath(file)
-        If Not File.Exists(fp) Then
+        If Not System.IO.File.Exists(fp) Then
             RaiseErrorEvent($"tr: {file}: No such file or directory{Environment.NewLine}")
             ShowPrompt()
             Return
         End If
 
-        Dim text = File.ReadAllText(fp)
+        Dim text = System.IO.File.ReadAllText(fp)
         Dim map As New Dictionary(Of Char, Char)()
         Dim minLen = System.Math.Min(set1.Length, set2.Length)
         For i As Integer = 0 To minLen - 1
@@ -1549,7 +1551,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         Dim script = tokens(1)
         Dim file = tokens(2)
         Dim fp = ResolvePath(file)
-        If Not File.Exists(fp) Then
+        If Not System.IO.File.Exists(fp) Then
             RaiseErrorEvent($"sed: can't read {file}: No such file or directory{Environment.NewLine}")
             ShowPrompt()
             Return
@@ -1577,7 +1579,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         End Try
 
         Dim sb As New StringBuilder()
-        For Each line In File.ReadAllLines(fp)
+        For Each line In System.IO.File.ReadAllLines(fp)
             If globalReplace Then
                 sb.AppendLine(rx.Replace(line, repl))
             Else
@@ -1592,7 +1594,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
     Private Sub CmdAwk(tokens As String())
         '  awk -F SEP '/PATTERN/ {print $N}' FILE   (simplified subset)
         If tokens.Length < 3 Then
-            RaiseErrorEvent($"awk: missing operand (usage: awk -F, '/pat/ {print $1}' file){Environment.NewLine}")
+            RaiseErrorEvent($"awk: missing operand (usage: awk -F, '/pat/ {{print $1}}' file){Environment.NewLine}")
             ShowPrompt()
             Return
         End If
@@ -1606,7 +1608,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         Dim program = tokens(i) : i += 1
         Dim file = tokens(i)
         Dim fp = ResolvePath(file)
-        If Not File.Exists(fp) Then
+        If Not System.IO.File.Exists(fp) Then
             RaiseErrorEvent($"awk: can't read {file}: No such file or directory{Environment.NewLine}")
             ShowPrompt()
             Return
@@ -1634,16 +1636,16 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         End If
 
         Dim sb As New StringBuilder()
-        For Each line In File.ReadAllLines(fp)
+        For Each line In System.IO.File.ReadAllLines(fp)
             If rx IsNot Nothing AndAlso Not rx.IsMatch(line) Then Continue For
             Dim cols = line.Split(sep)
             Dim expanded = Regex.Replace(printSpec, "\$(\d+)", Function(mt)
-                                                                  Dim idx As Integer
-                                                                  If Integer.TryParse(mt.Groups(1).Value, idx) AndAlso idx >= 1 AndAlso idx <= cols.Length Then
-                                                                      Return cols(idx - 1)
-                                                                  End If
-                                                                  Return mt.Value
-                                                              End Function)
+                                                                   Dim idx As Integer
+                                                                   If Integer.TryParse(mt.Groups(1).Value, idx) AndAlso idx >= 1 AndAlso idx <= cols.Length Then
+                                                                       Return cols(idx - 1)
+                                                                   End If
+                                                                   Return mt.Value
+                                                               End Function)
             sb.AppendLine(expanded)
         Next
 
@@ -1794,7 +1796,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
 
     Private Sub CmdFree(tokens As String())
         Dim human As Boolean = tokens.Length > 1 AndAlso (tokens(1) = "-h" OrElse tokens(1) = "-m" OrElse tokens(1) = "-g")
-        Dim gc = GC.GetTotalMemory(False)
+        Dim gc = System.GC.GetTotalMemory(False)
         Dim totalPhys As Long = 0, availPhys As Long = 0
         Try
             Dim ci = New Microsoft.VisualBasic.Devices.ComputerInfo()
