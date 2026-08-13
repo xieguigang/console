@@ -94,37 +94,92 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
             Return
         End If
 
-        SyncLock sync
-            Dim info = BuildConnectionInfo()
-            client = New SSH.SshClient(info)
-            client.KeepAliveInterval = TimeSpan.FromSeconds(30)
+        '  Host-key verification. By default we do NOT trust unknown keys; the
+        '  AcceptAnyHostKey flag (testing only) trusts everything.
+        Dim hostKeyRejected As Boolean = False
 
-            '  Host-key verification. By default we do NOT trust unknown keys; the
-            '  AcceptAnyHostKey flag (testing only) trusts everything.
-            AddHandler client.HostKeyReceived,
-                    Sub(sender As Object, e As HostKeyEventArgs)
-                        If Options.AcceptAnyHostKey Then
-                            e.CanTrust = True
-                        ElseIf Not e.CanTrust Then
-                            RaiseErrorEvent("Host key not trusted: " & e.FingerPrintSHA256 & Environment.NewLine)
-                        End If
-                    End Sub
+        Try
+            Dim info As SSH.ConnectionInfo
+            SyncLock sync
+                info = BuildConnectionInfo()
+                client = New SSH.SshClient(info)
+                client.KeepAliveInterval = TimeSpan.FromSeconds(30)
 
-            client.Connect()
+                AddHandler client.HostKeyReceived,
+                        Sub(sender As Object, e As HostKeyEventArgs)
+                            If Options.AcceptAnyHostKey Then
+                                e.CanTrust = True
+                            ElseIf Not e.CanTrust Then
+                                hostKeyRejected = True
+                                RaiseErrorEvent("Host key not trusted: " & e.FingerPrintSHA256 & Environment.NewLine)
+                            End If
+                        End Sub
 
-            '  Attach the remote shell to a ShellStream (bidirectional).
-            shell = client.CreateShellStream(
-                    If(String.IsNullOrWhiteSpace(Options.TerminalType), "xterm", Options.TerminalType),
-                    Columns, Rows, 0UI, 0UI, 1024)
+                client.Connect()
+
+                '  Attach the remote shell to a ShellStream (bidirectional).
+                shell = client.CreateShellStream(
+                        If(String.IsNullOrWhiteSpace(Options.TerminalType), "xterm", Options.TerminalType),
+                        Columns, Rows, 0UI, 0UI, 1024)
+            End SyncLock
 
             '  Start the background reader that pumps remote output into the console.
-            runRead = True
-            readThread = New Thread(AddressOf ReadLoop)
-            readThread.IsBackground = True
-            readThread.Name = "SshShellReader"
-            readThread.Start()
-        End SyncLock
+            SyncLock sync
+                If client Is Nothing OrElse shell Is Nothing OrElse Not client.IsConnected Then
+                    '  Connection was torn down between Connect and here; treat as failure.
+                    Throw New InvalidOperationException("SSH connection was lost before the shell could start.")
+                End If
+
+                runRead = True
+                readThread = New Thread(AddressOf ReadLoop)
+                readThread.IsBackground = True
+                readThread.Name = "SshShellReader"
+                readThread.Start()
+            End SyncLock
+        Catch ex As Exception
+            '  When the host key is rejected, HostKeyReceived already printed the
+            '  reason; otherwise surface a friendly, human-readable diagnosis.
+            If Not hostKeyRejected Then
+                RaiseErrorEvent(BuildFriendlyMessage(ex) & Environment.NewLine)
+            End If
+
+            '  Always release any partially created client/shell so the console does
+            '  not get stuck in a half-connected, frozen state.
+            StopProcess()
+
+            '  Signal the host to fall back to the local shell instead of hanging.
+            RaiseExitEvent()
+        End Try
     End Sub
+
+    ''' <summary>
+    ''' Maps the raw SSH.NET / networking exception to a concise, human-readable
+    ''' diagnosis shown to the user when a connection attempt fails.
+    ''' </summary>
+    Private Function BuildFriendlyMessage(ex As Exception) As String
+        '  Walk the inner chain so wrapped transport errors still classify correctly.
+        Dim current = ex
+        Do While current IsNot Nothing
+            Select Case True
+                Case TypeOf current Is SSH.Common.SshAuthenticationException
+                    Return "SSH 认证失败：用户名或密码/密钥不正确。"
+
+                Case TypeOf current Is System.Net.Sockets.SocketException
+                    Return "无法连接或连接超时：服务器不可用、网络不通或被防火墙拦截。"
+
+                Case TypeOf current Is TimeoutException
+                    Return "SSH 连接超时：服务器响应时间过长。"
+
+                Case TypeOf current Is SSH.Common.SshConnectionException
+                    Return "SSH 连接协商失败或被远程拒绝：" & current.Message
+
+                Case Else
+                    current = current.InnerException
+            End Select
+        Loop
+
+        Return "SSH 连接失败：" & ex.Message
+    End Function
 
     ''' <summary>
     ''' Background loop: reads remote output bytes from the shell stream and raises
@@ -134,6 +189,7 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
     Private Sub ReadLoop()
         Dim buffer(4095) As Byte
         Dim decoder = Encoding.GetDecoder()
+        Dim disconnected As Boolean = False
 
         While runRead AndAlso shell IsNot Nothing
             Dim read As Integer = 0
@@ -141,11 +197,27 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
             Try
                 read = shell.Read(buffer, 0, buffer.Length)
             Catch ex As Exception
-                RaiseErrorEvent("SSH read error: " & ex.Message & Environment.NewLine)
+                '  The remote end most likely dropped the connection (network down,
+                '  server reboot, SSH service stopped). Report it and end the loop.
+                RaiseErrorEvent("SSH 连接已中断（网络断开或远程主机关机）：" & ex.Message & Environment.NewLine)
+                disconnected = True
                 Exit While
             End Try
 
             If read <= 0 Then
+                '  EOF on the shell channel: the remote shell exited. Distinguish a
+                '  clean logout from a dropped transport so the user is not left
+                '  guessing why the session ended.
+                Dim stillConnected As Boolean = False
+                SyncLock sync
+                    stillConnected = client IsNot Nothing AndAlso client.IsConnected
+                End SyncLock
+
+                If Not stillConnected Then
+                    RaiseErrorEvent("SSH 连接已中断（网络断开或远程主机关机）。" & Environment.NewLine)
+                    disconnected = True
+                End If
+
                 If CheckExit(decoder, buffer) Then
                     Exit While
                 End If
@@ -164,7 +236,13 @@ Public Class SshProcessInterface : Inherits AbstractProcessInterface
             End If
         End While
 
-        '  Inform the console that the session ended.
+        '  If we left the loop because the connection dropped, make sure the
+        '  client/shell are released so the host can cleanly fall back.
+        If disconnected Then
+            StopProcess()
+        End If
+
+        '  Inform the console that the session ended (host falls back to local shell).
         RaiseExitEvent()
     End Sub
 

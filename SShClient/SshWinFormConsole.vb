@@ -241,7 +241,7 @@ Public Class SshWinFormConsole : Inherits UserControl
             Return
         End If
 
-        ConsoleControl1.WriteOutput(Environment.NewLine & "SSH session closed." & Environment.NewLine, Color.Gray)
+        ConsoleControl1.WriteOutput(Environment.NewLine & "SSH 连接已结束，已返回本地终端。可输入 ""ssh user@host"" 重新连接。" & Environment.NewLine, Color.Gray)
         Disconnect()
         StartLocalShell()
     End Sub
