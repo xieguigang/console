@@ -255,6 +255,7 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         Dim firstSpace As Integer = line.IndexOfAny(New Char() {" "c, ControlChars.Tab})
         Dim name As String
         Dim rest As String
+        Dim value As String = Nothing
 
         If firstSpace < 0 Then
             name = line
@@ -1178,12 +1179,11 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
         End If
 
         Dim sb As New StringBuilder()
-        Dim depthGuard As Integer = 0
+        Const maxDepth As Integer = 200
 
-        Dim visit As Action(Of String) = Nothing
-        visit = Sub(dir)
-                    If depthGuard > 200 Then Return
-                    depthGuard += 1
+        Dim visit As Action(Of String, Integer) = Nothing
+        visit = Sub(dir, depth)
+                    If depth > maxDepth Then Return
                     Try
                         For Each entry In Directory.EnumerateFileSystemEntries(dir)
                             Dim isDir = Directory.Exists(entry)
@@ -1192,12 +1192,12 @@ Public Class LocalShellInterface : Inherits AbstractProcessInterface : Implement
                             If nameRx Is Nothing OrElse nameRx.IsMatch(Path.GetFileName(entry)) Then
                                 sb.AppendLine(entry)
                             End If
-                            If isDir Then visit(entry)
+                            If isDir Then visit(entry, depth + 1)
                         Next
                     Catch
                     End Try
                 End Sub
-        visit(startPath)
+        visit(startPath, 0)
 
         RaiseOutputEvent(sb.ToString())
         ShowPrompt()
