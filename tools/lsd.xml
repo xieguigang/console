@@ -1,0 +1,168 @@
+﻿<?xml version="1.0"?>
+<doc>
+<assembly>
+<name>
+lsd
+</name>
+</assembly>
+<members>
+<member name="T:lsd.lsd.ArgsParser">
+ <summary>
+ Lightweight command line parser for <c>lsd</c>. Supports short
+ option clustering (e.g. <c>-alR</c>), long options with equals
+ assignment (e.g. <c>--color=never</c>, <c>-depth=2</c>) and a
+ list of positional path arguments.
+ </summary>
+</member>
+<member name="M:lsd.lsd.ArgsParser.Parse(System.String[])">
+ <summary>
+ Parse the given argument array into a <see cref="T:lsd.lsd.LsdOptions"/> instance.
+ </summary>
+</member>
+<member name="T:lsd.lsd.ConsoleColorTheme">
+ <summary>
+ Centralised colour theme mapping file types and permission bits to
+ <see cref="T:Microsoft.VisualBasic.ApplicationServices.Terminal.ConsoleFormat"/> instances. It reuses the ANSI escape
+ sequence helpers from <c>Microsoft.VisualBasic.Core</c> so that no
+ escape codes are constructed by hand.
+ </summary>
+</member>
+<member name="M:lsd.lsd.ConsoleColorTheme.GetEntryFormat(lsd.lsd.FileEntry)">
+ <summary>
+ Colour for the full entry name (icon + name), based on type.
+ </summary>
+</member>
+<member name="M:lsd.lsd.ConsoleColorTheme.GetColoredPermission(System.String,System.Boolean)">
+ <summary>
+ Build the coloured permission string, e.g.
+ <c>drwxr-xr-x</c> with per-bit colours.
+ </summary>
+</member>
+<member name="M:lsd.lsd.ConsoleColorTheme.AppendStyledName(System.Text.StringBuilder,lsd.lsd.FileEntry,System.Boolean)">
+ <summary>
+ Append the icon + name with the appropriate colour to the builder.
+ </summary>
+</member>
+<member name="T:lsd.lsd.FileEntry">
+ <summary>
+ A single file system entry with the information required for both
+ the <c>ls</c> and <c>tree</c> rendering.
+ </summary>
+</member>
+<member name="M:lsd.lsd.FileEntry.BuildPermissionString(System.IO.FileSystemInfo)">
+ <summary>
+ Build a human readable permission string in the bash style, e.g.
+ <c>drwxr-xr-x</c>. The first character encodes the entry type.
+ </summary>
+</member>
+<member name="T:lsd.lsd.FileSystemScanner">
+ <summary>
+ Enumerates directories and files and produces <see cref="T:lsd.lsd.FileEntry"/>
+ instances. Handles hidden/almost-all filtering and symlink detection.
+ </summary>
+</member>
+<member name="M:lsd.lsd.FileSystemScanner.ListDirectory(System.String,lsd.lsd.LsdOptions)">
+ <summary>
+ Enumerate the direct children of <paramref name="path"/>.
+ </summary>
+</member>
+<member name="M:lsd.lsd.FileSystemScanner.ListPath(System.String,lsd.lsd.LsdOptions)">
+ <summary>
+ Enumerate a single path which may be a file or a directory.
+ Returns the single entry for a file, or the directory children.
+ </summary>
+</member>
+<member name="T:lsd.lsd.IconProvider">
+ <summary>
+ Maps file types and extensions to Unicode / nerd-style icons,
+ following the classic <c>lsd</c> (Rust) visual conventions.
+ </summary>
+</member>
+<member name="M:lsd.lsd.IconProvider.GetDirectoryIcon">
+ <summary>
+ Get the icon for a directory entry (open if it has children shown).
+ </summary>
+</member>
+<member name="M:lsd.lsd.IconProvider.GetFileIcon(lsd.lsd.FileEntry)">
+ <summary>
+ Get the icon for a file entry based on its type and extension.
+ </summary>
+</member>
+<member name="T:lsd.lsd.LsdOptions">
+ <summary>
+ Parsed command line options for the <c>lsd</c> program.
+ </summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.ShowAll">
+ <summary>-a: do not ignore entries starting with . (includes . and ..)</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.AlmostAll">
+ <summary>-A: almost all; ignore . and .. but show other hidden entries</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.LongFormat">
+ <summary>-l: use a long listing format</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.TreeMode">
+ <summary>-t: tree mode (display folder as a file tree)</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.SortByTime">
+ <summary>-t (ls sort): sort by modification time, newest first</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.SortBySize">
+ <summary>-S: sort by file size, largest first</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.Reverse">
+ <summary>-r: reverse order while sorting</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.Recursive">
+ <summary>-R: list subdirectories recursively</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.ColorMode">
+ <summary>--color=auto/always/never</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.Depth">
+ <summary>-depth=N: tree recursion depth, -1 means unlimited</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.Paths">
+ <summary>positional path arguments; defaults to current directory</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.ShowHelp">
+ <summary>requested help output</summary>
+</member>
+<member name="F:lsd.lsd.LsdOptions.ShowVersion">
+ <summary>requested version output</summary>
+</member>
+<member name="P:lsd.lsd.LsdOptions.ColorEnabled">
+ <summary>resolve the effective color mode flag; auto disables color when output is redirected.</summary>
+</member>
+<member name="T:lsd.lsd.LsRenderer">
+ <summary>
+ Renders the classic <c>ls</c> style output: multi-column listing by
+ default, long format with <c>-l</c>, sorting and recursive listing.
+ </summary>
+</member>
+<member name="M:lsd.lsd.LsRenderer.Render(lsd.lsd.LsdOptions)">
+ <summary>
+ Render all requested paths. Mimics bash ls: a header is printed
+ when more than one path is requested or when recursing.
+ </summary>
+</member>
+<member name="M:lsd.lsd.LsRenderer.StripAnsi(System.String)">
+ <summary>
+ Remove ANSI escape sequences so that visual width can be measured.
+ </summary>
+</member>
+<member name="T:lsd.lsd.TreeRenderer">
+ <summary>
+ Renders the directory contents as an ascii tree, compatible with the
+ linux <c>tree</c> command. The <c>-depth=N</c> option limits the
+ recursion depth.
+ </summary>
+</member>
+<member name="M:lsd.lsd.TreeRenderer.Render(lsd.lsd.LsdOptions)">
+ <summary>
+ Render the tree for every requested path.
+ </summary>
+</member>
+</members>
+</doc>

@@ -1,0 +1,20 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/framework/">
+    <Project Path="../../../../GCModeller/src/runtime/sciBASIC#/Microsoft.VisualBasic.Core/src/Core.vbproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="../../../../GCModeller/src/runtime/sciBASIC#/mime/application%json/JSON-netcore5.vbproj">
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
+  <Project Path="jq/jq.vbproj" Id="8f5f080e-5432-4356-b460-6f58bc6846a2">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="lsd/lsd.vbproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+</Solution>
