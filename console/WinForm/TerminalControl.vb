@@ -21,14 +21,11 @@
 '   * StartProcess    -> reset the grid
 ' ---------------------------------------------------------------------------
 
-Imports System.Drawing
 Imports System.Text
-Imports System.Windows.Forms
 
 Namespace Console
 
-    Public Class TerminalControl
-        Inherits ConsoleControl
+    Public Class TerminalControl : Inherits ConsoleControl
 
         '  The character-grid terminal screen model.
         Private _buffer As TerminalBuffer
