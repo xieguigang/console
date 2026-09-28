@@ -1,6 +1,5 @@
 ﻿Imports System.ComponentModel
 Imports System.Text
-Imports Microsoft.VisualBasic.ApplicationServices.Terminal
 Imports Microsoft.VisualBasic.Windows.Forms.WebView2
 Imports Microsoft.VisualBasic.Windows.Forms.Win32
 Imports Microsoft.Web.WebView2.Core
