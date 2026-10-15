@@ -7,6 +7,11 @@ Public Class ConsoleEventArgs : Inherits EventArgs
     ''' Gets the content.
     ''' </summary>
     Public ReadOnly Property Content As String
+    ''' <summary>
+    ''' stdout/stderr
+    ''' </summary>
+    ''' <returns></returns>
+    Public ReadOnly Property Type As String
 
     ''' <summary>
     ''' Initializes a new instance of the <see cref="ConsoleEventArgs"/> class.
@@ -18,8 +23,12 @@ Public Class ConsoleEventArgs : Inherits EventArgs
     ''' Initializes a new instance of the <see cref="ConsoleEventArgs"/> class.
     ''' </summary>
     ''' <param name="content">The content.</param>
-    Public Sub New(content As String)
+    ''' <remarks>
+    ''' type of the output content stream could be: stdout / stderr
+    ''' </remarks>
+    Public Sub New(content As String, Optional type As String = "stdout")
         '  Set the content.
+        Me.Type = type
         Me.Content = content
     End Sub
 

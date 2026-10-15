@@ -967,13 +967,13 @@ Partial Public Class WebViewConsole : Inherits UserControl
             WriteOutput(args.Content, Color.White)
         End If
 
-        RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(args.Content))
+        RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(args.Content, "stdout"))
     End Sub
 
     Private Sub processInterface_OnProcessError(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessError
         WriteOutput(args.Content, Color.Red)
 
-        RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(args.Content))
+        RaiseEvent OnConsoleOutput(Me, New ConsoleEventArgs(args.Content, "stderr"))
     End Sub
 
     Private Sub processInterface_OnProcessInput(sender As Object, args As ProcessEventArgs) Handles m_console.OnProcessInput
