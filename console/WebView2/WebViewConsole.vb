@@ -128,7 +128,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
     ''' <summary>
     ''' Occurs when the back-end process exits.
     ''' </summary>
-    Public Event ProcessExisted()
+    Public Event ProcessExisted(args As ProcessEventArgs)
 
     ''' <summary>
     ''' Occurs after the renderer reports a new grid size, so hosts can resize the
@@ -986,7 +986,7 @@ Partial Public Class WebViewConsole : Inherits UserControl
                         Color.FromArgb(255, 0, 255, 0))
         End If
 
-        RaiseEvent ProcessExisted()
+        RaiseEvent ProcessExisted(args)
     End Sub
 
 #End Region

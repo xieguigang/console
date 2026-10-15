@@ -346,7 +346,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
 
     End Sub
 
-    Public Event ProcessExisted()
+    Public Event ProcessExisted(args As ProcessEventArgs)
 
     ''' <summary>
     ''' Handles the OnProcessExit event of the processInterace control.
@@ -366,7 +366,7 @@ Partial Public Class ConsoleControl : Inherits UserControl
             Invoke(Sub() richTextBoxConsole.ReadOnly = True)
         End If
 
-        RaiseEvent ProcessExisted()
+        RaiseEvent ProcessExisted(args)
     End Sub
 
     ''' <summary>
